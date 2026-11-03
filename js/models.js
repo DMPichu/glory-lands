@@ -1098,7 +1098,9 @@ function groundTextures() {
         const t = rnd(), off = (rnd() - 0.5) * MAP.laneHalf * 1.9;
         const px = ax + (bx - ax) * t + (-(bz - az) / len) * off, pz = az + (bz - az) * t + ((bx - ax) / len) * off;
         const red = redness(px);
-        x.fillStyle = red > 0.5 ? `rgba(${30 + rnd() * 40},${25 + rnd() * 25},${35 + rnd() * 30},0.5)` : `rgba(${120 + rnd() * 60},${100 + rnd() * 50},${70 + rnd() * 40},0.5)`;
+        // piedrecitas de tono parecido al camino (con poco contraste, para que no parezca confeti)
+        const v = rnd() * 30;
+        x.fillStyle = red > 0.5 ? `rgba(${55 + v},${45 + v},${55 + v},0.22)` : `rgba(${140 + v},${118 + v},${84 + v},0.25)`;
         const s = (0.2 + rnd() * 0.5) * k;
         x.fillRect(sx(px), sz(pz), s, s);
       }
@@ -1385,7 +1387,7 @@ export function buildWorld(scene) {
   // piedras de la orilla y nenúfares
   const bank = [], lilies = [];
   for (let z = MAP.minZ; z < MAP.maxZ; z += 1.6) {
-    if ([-72, 0, 72].some((lz) => Math.abs(z - lz) < 8)) continue;
+    if ([-73, 0, 73].some((lz) => Math.abs(z - lz) < 8)) continue;
     for (const s of [-1, 1]) if (rnd() < 0.55) bank.push({ x: riverX(z) + s * (6.6 + rnd() * 1.5), z: z + rnd(), y: 0.1, s: 0.3 + rnd() * 0.5, sy: 0.6, ry: rnd() * 6, c1: pick(['#8a8678', '#9a9688', '#6a6e70']) });
     if (rnd() < 0.25) lilies.push({ x: riverX(z) + (rnd() - 0.5) * 9, z, y: 0.09, s: 0.5 + rnd() * 0.5, ry: rnd() * 6, c1: pick(['#3a8a3a', '#4a9a40']) });
   }
@@ -1395,7 +1397,7 @@ export function buildWorld(scene) {
   // puentes donde los carriles cruzan el río
   const wood = mat(0x7a5434, { r: 0.85 });
   const stone = mat(0xbab4a4, { r: 0.9 });
-  for (const lz of [-72, 0, 72]) {
+  for (const lz of [-73, 0, 73]) {
     const cx = riverX(lz);
     const mid = lz === 0;
     const deckM = mid ? stone : wood;

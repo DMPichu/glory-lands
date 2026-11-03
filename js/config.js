@@ -9,13 +9,15 @@ export const MAP = {
   minZ: -88,
   maxZ: 88,
   laneHalf: 6, // medio ancho del camino pintado de cada carril
+  roadSpeed: 0.12, // los héroes van un 12 % más rápido por el camino
 };
 
 // Recorrido de cada carril, de la base azul a la roja.
 export const LANES = {
-  top: [[-114, -6], [-108, -56], [-92, -72], [92, -72], [108, -56], [114, -6]],
+  // esquinas redondeadas: por el camino se llega casi igual de rápido que atajando
+  top: [[-114, -6], [-109, -40], [-101, -58], [-86, -69], [-66, -73], [66, -73], [86, -69], [101, -58], [109, -40], [114, -6]],
   mid: [[-114, 0], [114, 0]],
-  bot: [[-114, 6], [-108, 56], [-92, 72], [92, 72], [108, 56], [114, 6]],
+  bot: [[-114, 6], [-109, 40], [-101, 58], [-86, 69], [-66, 73], [66, 73], [86, 69], [101, 58], [109, 40], [114, 6]],
 };
 export const LANE_NAMES = { top: 'norte', mid: 'central', bot: 'sur' };
 
@@ -24,9 +26,9 @@ const BLUE_LAYOUT = {
   fountain: { x: -138, z: 0 },
   nexus: { x: -122, z: 0 },
   towers: [
-    { lane: 'top', tier: 1, x: -50, z: -72 }, { lane: 'top', tier: 2, x: -104, z: -60 },
+    { lane: 'top', tier: 1, x: -50, z: -73 }, { lane: 'top', tier: 2, x: -100, z: -57 },
     { lane: 'mid', tier: 1, x: -45, z: 0 }, { lane: 'mid', tier: 2, x: -82, z: 0 },
-    { lane: 'bot', tier: 1, x: -50, z: 72 }, { lane: 'bot', tier: 2, x: -104, z: 60 },
+    { lane: 'bot', tier: 1, x: -50, z: 73 }, { lane: 'bot', tier: 2, x: -100, z: 57 },
   ],
 };
 const mirror = (p) => ({ ...p, x: -p.x });

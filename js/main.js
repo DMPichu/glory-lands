@@ -105,7 +105,7 @@ function start() {
   ui.onAbilityHover = (i) => { aim.hover = i; };
   window.__game = game;
   ui.message(`¡Bienvenida a Glory Lands! Derriba los obeliscos y destruye el Altar de la Legión.`, 'info');
-  ui.message('Clic derecho para moverte y atacar · Q W E R elige una habilidad y clic izquierdo donde quieres que golpee', 'info');
+  ui.message('Clic derecho para moverte y atacar · Q W E R lanzan las habilidades hacia el cursor', 'info');
 }
 
 function resize() {
@@ -205,7 +205,7 @@ window.addEventListener('keydown', (e) => {
     else if (!e.repeat) selectAbility(idx);
     return;
   }
-  if (k === 'tab') { e.preventDefault(); ui.showScoreboard(true); return; }
+  if (k === 'tab') { e.preventDefault(); if (!e.repeat && !ui.scoreOpen) ui.showScoreboard(true); return; }
   if (k === 'p') ui.toggleShop();
   else if (k === 'b') game.startRecall(game.player);
   else if (k === '1') game.usePotion(game.player);
@@ -217,17 +217,22 @@ const aim = { idx: -1, hover: -1 };
 window.addEventListener('keyup', (e) => {
   if (!game) return;
   const k = e.key.toLowerCase();
-  if (k === 'tab') { ui.showScoreboard(false); return; }
+  if (k === 'tab') { e.preventDefault(); ui.showScoreboard(false); return; }
 });
 
-// Elegir habilidad: las que se lanzan sobre uno mismo (alcance 0) salen al momento;
-// las demás muestran el alcance y esperan al clic. Pulsar la misma tecla la cancela.
+// Elegir habilidad. Con «lanzamiento rápido» sale al momento hacia el cursor; si no,
+// muestra el alcance y espera al clic izquierdo (la misma tecla o el clic derecho cancelan).
 function selectAbility(idx) {
   const a = game.player.abilities[idx];
   if (!a || !game.player.alive || game.over) return;
   if (a.rank === 0) { ui.message('Esa habilidad aún no está aprendida', 'warn'); return; }
-  if (!(a.def.range > 0)) { aim.idx = -1; castAt(idx); return; }
+  // lanzamiento rápido (por defecto): sale al momento hacia el cursor
+  if (quickCast() || !(a.def.range > 0)) { aim.idx = -1; castAt(idx); return; }
   aim.idx = aim.idx === idx ? -1 : idx;
+}
+
+function quickCast() {
+  try { return $('quickCast')?.checked ?? true; } catch { return true; }
 }
 window.addEventListener('blur', () => { aim.idx = -1; if (ui) ui.showScoreboard(false); });
 
@@ -299,7 +304,8 @@ function frame(now) {
   }
   updateMouseWorld();
   ui.hover = game.player.alive ? enemyUnderMouse() : null;
-  view.style.cursor = ui.hover ? 'crosshair' : 'default';
+  const cur = aim.idx >= 0 ? 'cur-aim' : ui.hover ? 'cur-attack' : 'cur-normal';
+  if (view.dataset.cur !== cur) { view.classList.remove('cur-aim', 'cur-attack', 'cur-normal'); view.classList.add(cur); view.dataset.cur = cur; }
 
   if (!game.paused) game.syncVisuals(dt);
   updateAim();

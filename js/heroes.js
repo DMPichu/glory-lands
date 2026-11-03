@@ -45,8 +45,8 @@ function capeGeo(w, h, bend = 0.3, flare = 0.3) {
 
 // ------------------------------------------------------------------ caras pintadas
 const faceCache = new Map();
-// Estilo amable: ojos grandes, redondos y brillantes del color de cada héroe, cejas
-// suaves, boquita y rubor. o: { iris, lash, brow, female, beard, paint, scar, closed }
+// Caras de estilo anime sobrio: ojos almendrados con el color de cada héroe, cejas,
+// nariz insinuada y boca. o: { iris, lash, brow, female, beard, paint, scar, closed, glow, frown }
 function faceTexture(o) {
   const key = JSON.stringify(o);
   if (faceCache.has(key)) return faceCache.get(key);
@@ -54,49 +54,72 @@ function faceTexture(o) {
   c.width = c.height = 256;
   const x = c.getContext('2d');
   const eyeY = 138, dx = 48;
-  const rw = o.female ? 24 : 21, rh = o.female ? 31 : 26;
+  // ojos almendrados (no de muñeca): blanco visible, iris mediano, un solo brillo
+  const ew = o.female ? 25 : 23, eh = o.female ? 16 : 13;
   x.lineCap = 'round';
   if (o.paint) { // pintura de guerra (Astrid): franja suave detrás de los ojos
-    x.fillStyle = o.paint; x.globalAlpha = 0.55;
-    x.beginPath(); x.ellipse(128, eyeY - 4, 104, 22, 0, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
+    x.fillStyle = o.paint; x.globalAlpha = 0.5;
+    x.beginPath(); x.ellipse(128, eyeY - 2, 100, 18, 0, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
   }
-  // rubor
-  for (const s of [-1, 1]) {
-    const g = x.createRadialGradient(128 + s * 66, eyeY + 38, 2, 128 + s * 66, eyeY + 38, 20);
-    g.addColorStop(0, 'rgba(255,130,150,0.5)'); g.addColorStop(1, 'rgba(255,130,150,0)');
-    x.fillStyle = g; x.fillRect(128 + s * 66 - 22, eyeY + 16, 44, 44);
+  if (o.female) { // rubor muy suave
+    for (const s of [-1, 1]) {
+      const g = x.createRadialGradient(128 + s * 64, eyeY + 34, 2, 128 + s * 64, eyeY + 34, 16);
+      g.addColorStop(0, 'rgba(255,130,150,0.22)'); g.addColorStop(1, 'rgba(255,130,150,0)');
+      x.fillStyle = g; x.fillRect(128 + s * 64 - 18, eyeY + 16, 36, 36);
+    }
   }
+  const almond = (cx, s, grow = 0) => {
+    x.beginPath();
+    x.moveTo(cx - s * (ew + grow), eyeY + 2);
+    x.quadraticCurveTo(cx - s * 4, eyeY - eh * 1.7 - grow, cx + s * (ew + grow), eyeY - eh * 0.35);
+    x.quadraticCurveTo(cx + s * 4, eyeY + eh * 1.25 + grow, cx - s * (ew + grow), eyeY + 2);
+    x.closePath();
+  };
   for (const s of [-1, 1]) {
     const cx = 128 + s * dx;
     if (o.closed) { // ojos cerrados y serenos (Grimdarkus)
-      x.strokeStyle = o.lash; x.lineWidth = 6;
-      x.beginPath(); x.arc(cx, eyeY - 6, 18, 0.2 * Math.PI, 0.8 * Math.PI); x.stroke();
+      x.strokeStyle = o.lash; x.lineWidth = 5;
+      x.beginPath(); x.moveTo(cx - ew, eyeY); x.quadraticCurveTo(cx, eyeY + 8, cx + ew, eyeY - 2); x.stroke();
     } else {
-      // ojo: óvalo del color del iris con degradado, pupila y dos brillos grandes
-      const ir = x.createLinearGradient(0, eyeY - rh, 0, eyeY + rh);
-      ir.addColorStop(0, o.irisDark || '#1a1430'); ir.addColorStop(0.55, o.iris); ir.addColorStop(1, o.irisLight || '#ffffff');
+      x.save();
+      almond(cx, s); x.fillStyle = '#fbf8f4'; x.fill(); x.clip();
+      const ir = x.createRadialGradient(cx, eyeY - 4, 1, cx, eyeY, eh * 1.15);
+      ir.addColorStop(0, o.irisLight || '#ffffff'); ir.addColorStop(0.45, o.iris); ir.addColorStop(1, o.irisDark || '#140f22');
       x.fillStyle = ir;
-      x.beginPath(); x.ellipse(cx, eyeY, rw, rh, 0, 0, Math.PI * 2); x.fill();
-      x.fillStyle = 'rgba(15,10,25,0.85)';
-      x.beginPath(); x.ellipse(cx, eyeY + 2, rw * 0.42, rh * 0.45, 0, 0, Math.PI * 2); x.fill();
-      x.fillStyle = '#ffffff';
-      x.beginPath(); x.ellipse(cx - rw * 0.32, eyeY - rh * 0.38, rw * 0.32, rh * 0.26, 0, 0, Math.PI * 2); x.fill();
-      x.beginPath(); x.arc(cx + rw * 0.35, eyeY + rh * 0.35, rw * 0.13, 0, Math.PI * 2); x.fill();
-      // línea de pestañas arriba
-      x.strokeStyle = o.lash; x.lineWidth = o.female ? 6 : 5;
-      x.beginPath(); x.ellipse(cx, eyeY + 2, rw + 2, rh + 2, 0, Math.PI * 1.12, Math.PI * 1.88); x.stroke();
-      if (o.female) {
-        x.lineWidth = 4;
-        x.beginPath(); x.moveTo(cx + s * (rw + 1), eyeY - rh * 0.45); x.lineTo(cx + s * (rw + 10), eyeY - rh * 0.75); x.stroke();
-      }
+      x.beginPath(); x.arc(cx + s * 2, eyeY, eh * 1.12, 0, Math.PI * 2); x.fill();
+      x.fillStyle = 'rgba(12,8,20,0.9)';
+      x.beginPath(); x.arc(cx + s * 2, eyeY + 1, eh * 0.45, 0, Math.PI * 2); x.fill();
+      x.fillStyle = 'rgba(255,255,255,0.9)';
+      x.beginPath(); x.arc(cx - 4, eyeY - eh * 0.45, eh * 0.28, 0, Math.PI * 2); x.fill();
+      x.restore();
+      // párpado superior marcado y línea inferior suave
+      x.strokeStyle = o.lash; x.lineWidth = o.female ? 5 : 4.5;
+      x.beginPath(); x.moveTo(cx - s * (ew + 1), eyeY + 2); x.quadraticCurveTo(cx - s * 4, eyeY - eh * 1.75, cx + s * (ew + 3), eyeY - eh * 0.45); x.stroke();
+      if (o.female) { x.lineWidth = 3; x.beginPath(); x.moveTo(cx + s * (ew + 2), eyeY - eh * 0.45); x.lineTo(cx + s * (ew + 9), eyeY - eh * 0.95); x.stroke(); }
+      x.strokeStyle = 'rgba(80,40,40,0.35)'; x.lineWidth = 2;
+      x.beginPath(); x.moveTo(cx - s * ew * 0.6, eyeY + eh * 0.95); x.quadraticCurveTo(cx, eyeY + eh * 1.2, cx + s * ew * 0.8, eyeY + eh * 0.5); x.stroke();
     }
-    // cejas suaves
-    x.strokeStyle = o.brow; x.lineWidth = 4;
-    x.beginPath(); x.arc(cx, eyeY - rh - 2, 18, 1.2 * Math.PI, 1.8 * Math.PI); x.stroke();
+    // cejas
+    x.strokeStyle = o.brow; x.lineWidth = o.female ? 3.5 : 5;
+    const by = eyeY - eh * 2.2 - (o.female ? 4 : 0);
+    x.beginPath(); x.moveTo(cx - s * 20, by + 5); x.quadraticCurveTo(cx, by - 4 + (o.frown ? 3 : 0), cx + s * 22, by + (o.frown ? 6 : 2)); x.stroke();
   }
+  // brillo sutil en los ojos (Ikaruus, Crixus, Catarina)
+  if (o.glow) {
+    x.globalCompositeOperation = 'lighter';
+    for (const s of [-1, 1]) {
+      const g = x.createRadialGradient(128 + s * dx, eyeY, 1, 128 + s * dx, eyeY, 22);
+      g.addColorStop(0, o.glow.replace(/[\d.]+\)$/, '0.35)')); g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g; x.fillRect(128 + s * dx - 22, eyeY - 22, 44, 44);
+    }
+    x.globalCompositeOperation = 'source-over';
+  }
+  // nariz insinuada
+  x.strokeStyle = 'rgba(140,70,60,0.35)'; x.lineWidth = 2.5;
+  x.beginPath(); x.moveTo(126, eyeY + 36); x.lineTo(130, eyeY + 44); x.stroke();
   // boquita sonriente
-  x.strokeStyle = o.mouth || '#b04a52'; x.lineWidth = 3.5;
-  x.beginPath(); x.arc(128, eyeY + 56, 9, 0.2 * Math.PI, 0.8 * Math.PI); x.stroke();
+  x.strokeStyle = o.mouth || '#a8505a'; x.lineWidth = 3;
+  x.beginPath(); x.moveTo(119, eyeY + 60); x.quadraticCurveTo(128, eyeY + (o.frown ? 61 : 65), 137, eyeY + 60); x.stroke();
   if (o.beard) { // perilla y bigote (Kouji)
     x.fillStyle = o.beard;
     x.beginPath(); x.ellipse(116, eyeY + 56, 13, 5, 0.25, 0, Math.PI * 2); x.ellipse(140, eyeY + 56, 13, 5, -0.25, 0, Math.PI * 2); x.fill();
@@ -172,18 +195,52 @@ function figure(o) {
   // cabeza: cráneo, mentón, orejas y cara pintada
   const head = new THREE.Group(); head.position.set(0, 1.9, 0);
   if (!o.noFace) {
-    head.add(sc(m(sph(0.23, 20), skin, 0, 0.02, 0), 0.95, 1.05, 1));
-    head.add(sc(m(sph(0.15, 14), skin, 0, -0.1, 0.05), 1, 0.85, 1));
+    head.add(m(headGeo(), skin, 0, 0, 0));
     const earG = o.elf ? cone(0.05, 0.2, 6) : sph(0.05, 8);
     for (const s of [-1, 1]) {
       const e = m(earG, skin, s * 0.215, 0.0, -0.01, 0, 0, o.elf ? -s * 1.25 : 0);
       head.add(e);
     }
-    const face = m(geo('facePlane', () => new THREE.PlaneGeometry(0.36, 0.36)), faceMat(o.face), 0, 0, 0.222, 0, 0, 0, false);
+    // la cara se pinta sobre la propia cabeza (una capa finísima encima), sin láminas
+    const face = m(faceGeo(), faceMat(o.face), 0, 0, 0, 0, 0, 0, false);
+    face.scale.setScalar(1.008);
     head.add(face);
   }
   body.add(head);
   return { group, parts: { body, legL, legR, armL, armR, head, torso, handR, handL }, mats: { skin, top, pants, boots, sleeves } };
+}
+
+// Cabeza de estilo anime: esfera algo alargada con mentón fino
+const HEAD_R = 0.235;
+function headGeo() {
+  return geo('animeHead', () => {
+    const g = new THREE.SphereGeometry(HEAD_R, 40, 30);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      let x = p.getX(i), y = p.getY(i) * 1.06, z = p.getZ(i);
+      if (y < 0) {
+        const k = Math.min(1, -y / (HEAD_R * 1.06));
+        x *= 1 - 0.34 * k * k;
+        z = z * (1 - 0.18 * k * k) + (z > 0 ? 0.035 * k : 0);
+      }
+      p.setXYZ(i, x, y, z);
+    }
+    g.computeVertexNormals();
+    return g;
+  });
+}
+// Copia de la cabeza con coordenadas de textura proyectadas desde delante (para la cara)
+function faceGeo() {
+  return geo('animeFace', () => {
+    const g = headGeo().clone();
+    const p = g.attributes.position, uv = g.attributes.uv;
+    for (let i = 0; i < p.count; i++) {
+      const front = p.getZ(i) > 0.03;
+      uv.setXY(i, front ? p.getX(i) / 0.36 + 0.5 : 0, front ? p.getY(i) / 0.36 + 0.5 : 0);
+    }
+    uv.needsUpdate = true;
+    return g;
+  });
 }
 
 // ------------------------------------------------------------------ pelo
@@ -192,14 +249,29 @@ function hairCap(head, hm, r = 0.25) {
   head.add(m(capSph(r, 0, 1.15), hm, 0, 0.035, -0.01));
   head.add(m(capSph(r, 0, 2.3, Math.PI, Math.PI), hm, 0, 0.03, -0.02));
 }
-// Flequillo: mechones en punta sobre la frente
-function bangs(head, hm, n = 7, len = 0.13, spread = 0.36, y = 0.2) {
-  for (let i = 0; i < n; i++) {
-    const t = n === 1 ? 0 : i / (n - 1) - 0.5;
-    const a = t * spread * 2.4;
-    const l = Math.min(len, 0.14) * (1 - Math.abs(t) * 0.3) + Math.abs(t) * 0.12;
-    head.add(m(cone(0.05, l, 6), hm, Math.sin(a) * 0.215, y - l * 0.3 - Math.abs(t) * 0.06, Math.cos(a) * 0.19, Math.PI - 0.5, 0, -t * 0.7));
-  }
+// Flequillo: una capa de pelo sobre la frente que termina en mechones en punta.
+// n = número de mechones; len = lo que bajan las puntas.
+function bangs(head, hm, n = 9, len = 0.18) {
+  len = Math.min(0.085, len * 0.42); // las puntas no deben tapar los ojos
+  const key = `fringe${n},${len}`;
+  const g = geo(key, () => {
+    const W = n * 4, H = 10;
+    const gg = new THREE.SphereGeometry(HEAD_R * 1.07, W, H, 0.12, Math.PI - 0.24, 0, 1.32);
+    const p = gg.attributes.position;
+    for (let iy = H - 2; iy <= H; iy++) {
+      for (let ix = 0; ix <= W; ix++) {
+        const i = iy * (W + 1) + ix;
+        const ph = (ix / W) * n; // posición dentro de los mechones
+        const tip = Math.pow(Math.abs(Math.cos(Math.PI * ph)), 3); // 1 en la punta, 0 entre mechones
+        const k = (iy - (H - 2)) / 2;
+        p.setY(i, p.getY(i) - len * tip * k - 0.02 * k);
+        p.setZ(i, p.getZ(i) + 0.012 * k);
+      }
+    }
+    gg.computeVertexNormals();
+    return gg;
+  });
+  head.add(m(g, hm, 0, 0.03, 0));
 }
 // Melena larga por detrás (lisa) y mechones laterales
 function longHair(head, hm, len = 0.8, width = 0.27) {
@@ -364,7 +436,10 @@ function buildYeslie() {
   const gold = mat(0xe0b33c, { m: 0.85, r: 0.3 });
   hairCap(p.head, hair); bangs(p.head, hair, 7, 0.17); longHair(p.head, hair, 1.0, 0.3);
   // ondas de pelo blanco a los lados
-  for (const s of [-1, 1]) for (let i = 0; i < 4; i++) p.head.add(m(sph(0.075, 10), hair, s * (0.2 + (i % 2) * 0.03), -0.08 - i * 0.13, 0.02 - i * 0.02));
+  for (const s of [-1, 1]) {
+    p.head.add(m(cone(0.075, 0.7, 8), hair, s * 0.21, -0.3, 0.02, Math.PI, 0, s * 0.12));
+    p.head.add(m(cone(0.06, 0.55, 8), hair, s * 0.25, -0.28, -0.08, Math.PI - 0.15, 0, s * 0.25));
+  }
   // cuernos curvos morados con reflejos turquesa
   ramHorns(p.head, mat(0x4a2a7a, { r: 0.35, m: 0.2 }), mat(0x3ad8e8, { e: 0x18a8c0, ei: 0.6 }), 1.0);
   // camisa blanca y abrigo azul marino con bordados dorados
@@ -490,29 +565,55 @@ function buildGrimdarkus() {
   return { ...f, extra: { spin: [cube], cape, anim } };
 }
 
+// Katana: hoja curva (tubo a lo largo de una curva), tsuba redonda y empuñadura forrada
+function katana(edgeGlow) {
+  const g = new THREE.Group();
+  const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(0, 0.12, 0), new THREE.Vector3(0, 0.62, -0.02), new THREE.Vector3(0, 1.12, -0.11));
+  const bladeG = geo('katanaBlade', () => {
+    const tg = new THREE.TubeGeometry(curve, 16, 0.022, 6, false);
+    tg.scale(1, 1, 1.6); // hoja más ancha que gruesa
+    return tg;
+  });
+  g.add(m(bladeG, mat(0xeef0f6, { m: 0.95, r: 0.12 })));
+  if (edgeGlow) g.add(m(geo('katanaEdge', () => new THREE.TubeGeometry(curve, 16, 0.009, 4, false)), mat(0xff6a2a, { e: 0xff3a00, ei: 1.6 }), 0, 0, 0.03));
+  g.add(m(cone(0.022, 0.08, 4), mat(0xeef0f6, { m: 0.95, r: 0.12 }), 0, 1.15, -0.13, -0.25));
+  g.add(m(cyl(0.065, 0.065, 0.02, 16), mat(0x2a2016, { m: 0.6, r: 0.4 }), 0, 0.1, 0)); // tsuba
+  g.add(m(cyl(0.024, 0.024, 0.28, 8), mat(0x1a1214), 0, -0.06, 0)); // empuñadura
+  for (let i = 0; i < 5; i++) g.add(m(box(0.05, 0.012, 0.05), mat(0xb01a2a), 0, -0.17 + i * 0.05, 0, 0, Math.PI / 4, 0));
+  g.add(m(cyl(0.028, 0.028, 0.03, 8), mat(0xc8a040, { m: 0.8 }), 0, -0.21, 0));
+  g.rotation.x = Math.PI / 2;
+  g.position.set(0, -0.02, 0.05);
+  return g;
+}
+
 function buildIkaruus() {
   const f = figure({ skin: 0xf6d6c0, top: 0x1e1a24, sleeves: 0x1e1a24, pants: 0x141218, boots: 0x141218, elf: true,
     face: { iris: '#ff3040', irisLight: '#ffd0d0', lash: '#2a0a10', brow: '#a01a28', glow: 'rgba(255,40,60,0.8)', frown: true } });
   const p = f.parts;
   const hair = mat(0xd02a3a, { r: 0.5 });
+  const hairD = mat(0xa81828, { r: 0.55 });
   hairCap(p.head, hair); bangs(p.head, hair, 7, 0.2);
-  longHair(p.head, hair, 0.95, 0.26); sideLocks(p.head, hair, 0.5);
-  // sombrero de paja (kasa)
+  // melena roja larga y abundante, con mechones al viento
+  longHair(p.head, hair, 1.15, 0.32);
+  sideLocks(p.head, hair, 0.6);
+  for (let i = 0; i < 9; i++) {
+    const t = i / 8 - 0.5;
+    p.head.add(m(cone(0.08, 0.7, 6), i % 2 ? hair : hairD, t * 0.46, -0.25 - Math.abs(t) * 0.1, -0.2 - (1 - Math.abs(t)) * 0.05, 0.25 + Math.abs(t) * 0.3, 0, t * 0.5 + Math.PI));
+  }
+  // sombrero de paja (kasa), más pequeño
   const straw = mat(0xa8865a, { r: 0.9 });
-  p.head.add(m(cone(0.52, 0.26, 20), straw, 0, 0.2, 0));
-  p.head.add(m(cyl(0.2, 0.22, 0.05, 16), mat(0x3a1a1a), 0, 0.12, 0));
+  p.head.add(m(cone(0.36, 0.2, 20), straw, 0, 0.27, -0.01));
+  p.head.add(m(cyl(0.2, 0.21, 0.04, 16), mat(0x3a1a1a), 0, 0.2, 0));
   // kimono oscuro con detalles rojos y hakama
   const red = mat(0xb01a2a, { r: 0.6 });
   p.body.add(m(box(0.05, 0.42, 0.02), red, -0.05, 1.38, 0.22, 0, 0, 0.35));
   p.body.add(m(cyl(0.2, 0.2, 0.08), red, 0, 1.1, 0));
   p.body.add(m(cyl(0.2, 0.4, 0.6, 14), mat(0x141218, { r: 0.7 }), 0, 0.78, 0));
-  // katana de hoja pálida con filo encendido
-  const k = sword(mat(0xf0e8f0, { m: 0.9, r: 0.15 }), mat(0x2a1a1a), 1.05, 0.045);
-  k.g.add(m(box(0.012, 1.05, 0.03), mat(0xff6a2a, { e: 0xff3a00, ei: 1.6 }), 0.024, 0.62, 0));
-  p.handR.add(k.g);
-  // vaina a la cintura
-  p.body.add(m(cyl(0.025, 0.025, 1.0, 6), mat(0x1a1214), -0.22, 0.95, 0.05, 0.4, 0, 1.2));
-  return { ...f, extra: { katana: k.g } };
+  const k = katana(true);
+  p.handR.add(k);
+  // saya (vaina) a la cintura
+  p.body.add(m(cyl(0.028, 0.024, 1.0, 8), mat(0x1a1214, { r: 0.4, m: 0.3 }), -0.22, 0.95, 0.05, 0.4, 0, 1.2));
+  return { ...f, extra: { katana: k } };
 }
 
 function buildCrixus() {

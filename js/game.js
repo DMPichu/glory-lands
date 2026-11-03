@@ -1,7 +1,7 @@
 // Núcleo del juego: unidades, combate, oleadas, estructuras y bucle principal.
 import * as THREE from 'three';
 import { HEROES, ITEMS, LAYOUT, MAP, CONST, MINIONS, STRUCTURES, TEAMS, HERO_ORDER, DIFFICULTY, LANES, LANE_NAMES, xpToNext } from './config.js';
-import { laneLength, lanePoint } from './map.js';
+import { laneLength, lanePoint, distToLanes } from './map.js';
 import { buildHeroModel, buildMinionModel, buildStructureModel, buildWorld, buildDragon, animateModel, corrupt } from './models.js';
 import { Effects } from './effects.js';
 import { ABILITY_IMPL, PASSIVE_IMPL } from './abilities.js';
@@ -43,6 +43,8 @@ export class Game {
 
     const hemi = new THREE.HemisphereLight(0xdfe8ff, 0x3a3020, 0.9);
     this.scene.add(hemi);
+    this.fill = new THREE.DirectionalLight(0xffe8d8, 0.55);
+    this.scene.add(this.fill, this.fill.target);
     const sun = new THREE.DirectionalLight(0xfff0d8, 1.6);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -194,9 +196,12 @@ export class Game {
 
   makeTeamRing(team, isPlayer) {
     const color = isPlayer ? 0x6dff8a : team === 'blue' ? 0x4aa3ff : 0xff4a5a;
-    const m = new THREE.Mesh(new THREE.RingGeometry(0.85, 1.0, 32), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, depthWrite: false }));
+    // aro con halo y sombra suave en el centro (textura en blanco teñida por equipo)
+    RING_TEX ||= ringTexture();
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), new THREE.MeshBasicMaterial({ color, map: RING_TEX, transparent: true, depthWrite: false }));
     m.rotation.x = -Math.PI / 2;
     m.position.y = 0.05;
+    m.renderOrder = 2;
     return m;
   }
 
@@ -231,7 +236,8 @@ export class Game {
     switch (k) {
       case 'as': return Math.min(2.5, u.base.as * (1 + g.as * L + this.itemStat(u, 'as') + this.buffSum(u, 'as')));
       case 'speed': {
-        const spd = (u.base.speed + this.itemStat(u, 'speed')) * (1 + this.buffSum(u, 'spd'));
+        const road = distToLanes(u.pos.x, u.pos.z) < MAP.laneHalf ? MAP.roadSpeed : 0;
+        const spd = (u.base.speed + this.itemStat(u, 'speed')) * (1 + this.buffSum(u, 'spd') + road);
         return spd * (1 - Math.min(0.7, this.buffMax(u, 'slow')));
       }
       case 'cdr': return Math.min(0.5, this.itemStat(u, 'cdr') + this.buffSum(u, 'cdr'));
@@ -510,8 +516,10 @@ export class Game {
     } else {
       u.deathAnim = 0.001;
       this.fx.burst(u.pos, u.team === 'blue' ? 0x8fd0ff : 0xb06aff, 80, 12, 0.4, 1.6, 4);
-      this.over = u.team === 'blue' ? 'defeat' : 'victory';
-      this.emit('gameOver', { result: this.over });
+      if (!this.over) { // la partida acaba con la primera base que cae
+        this.over = u.team === 'blue' ? 'defeat' : 'victory';
+        this.emit('gameOver', { result: this.over });
+      }
     }
     u.damagedBy.clear();
   }
@@ -1331,6 +1339,8 @@ export class Game {
     this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
     this.sun.position.set(this.camPos.x + 20, 50, this.camPos.z - 10);
+    this.fill.position.set(this.camPos.x, this.camPos.y, this.camPos.z + 10);
+    this.fill.target.position.set(this.camPos.x, 0, this.camPos.z - 16 * z);
     this.sun.target.position.set(this.camPos.x, 0, this.camPos.z - 16 * z);
   }
 }
@@ -1339,6 +1349,28 @@ const GLOW_MAT = new THREE.MeshStandardMaterial({ color: 0xfff6c0, emissive: 0xf
 
 // unidades que se empujan entre sí (los épicos no se dejan empujar)
 const mobile = (u) => u.kind === 'hero' || u.kind === 'minion' || (u.kind === 'monster' && !u.epic);
+
+let RING_TEX = null;
+function ringTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const x = c.getContext('2d');
+  // sombra en el centro (negra; el color del material no la tiñe mucho porque es oscura)
+  const sh = x.createRadialGradient(128, 128, 10, 128, 128, 80);
+  sh.addColorStop(0, 'rgba(0,0,0,0.55)'); sh.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = sh; x.fillRect(0, 0, 256, 256);
+  // halo exterior y aro
+  const glow = x.createRadialGradient(128, 128, 70, 128, 128, 126);
+  glow.addColorStop(0, 'rgba(255,255,255,0)'); glow.addColorStop(0.45, 'rgba(255,255,255,0.35)'); glow.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = glow; x.fillRect(0, 0, 256, 256);
+  x.strokeStyle = 'rgba(255,255,255,0.95)'; x.lineWidth = 7;
+  x.beginPath(); x.arc(128, 128, 94, 0, Math.PI * 2); x.stroke();
+  x.strokeStyle = 'rgba(255,255,255,0.5)'; x.lineWidth = 2;
+  x.beginPath(); x.arc(128, 128, 104, 0, Math.PI * 2); x.stroke();
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
 
 function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) {
