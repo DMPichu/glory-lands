@@ -4,7 +4,7 @@ Prototipo de juego 3D estilo MOBA ambientado en **Glory Lands**. Los **Blood Haw
 
 ## Cómo se juega
 
-1. Elige a uno de los **10 héroes**: Josephine, Fotsor, Yeslie Moonbloom, Astrid, Kouji Kitaeda, Grimdarkus II, Ikaruus Rukhu, Crixus, Legna o Catarina Fersen.
+1. Elige a uno de los **27 héroes**: Josephine, Fotsor, Yeslie Moonbloom, Astrid, Kouji Kitaeda, Grimdarkus II, Ikaruus Rukhu, Crixus, Legna, Catarina Fersen, Hermes, Polett, Belian, Vallentine, Emmeline, Lucille, Esperanza, Fuyumi, Slinxi, Umi, Zeflie, Zestari, Xeluna, Vrizahl, Candle, Cabbo o Konta. Zeflie y Zestari combinan sus marcas: si juegan juntas, cada una hace estallar la de la otra.
 2. Elige el modo (**7 contra 7**, o **1 contra 1** para practicar) y la dificultad. Los otros 13 héroes son bots.
 3. Hay tres carriles (norte, central y sur) con dos obeliscos cada uno. Derriba los dos de **cualquier** carril para dejar expuesto el **Altar** de la Legión y destrúyelo.
 4. Si cae el **Santuario** (tu base), pierdes.

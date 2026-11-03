@@ -4,9 +4,9 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { MAP, LANES, LAYOUT, MODEL_GLB, CAMPS, EPIC_CAMPS } from './config.js';
+import { MAP, LANES, LAYOUT, MODEL_GLB, CAMPS, EPIC_CAMPS, HEROES } from './config.js';
 import { distToLanes, laneLength, lanePoint } from './map.js';
-import { HERO_BUILDERS_V2 } from './heroes.js';
+import { HERO_BUILDERS_V2, buildFromLook } from './heroes.js';
 
 // --- Cachés para no duplicar geometrías y materiales ---------------------------
 const geoCache = new Map();
@@ -765,7 +765,8 @@ const HERO_BUILDERS = {
 
 export function buildHeroModel(id, corrupted, glb) {
   // modelos de estilo anime (js/heroes.js); los antiguos quedan de respaldo
-  const m = (HERO_BUILDERS_V2[id] ?? HERO_BUILDERS[id])();
+  const look = HEROES[id]?.look;
+  const m = HERO_BUILDERS_V2[id] ? HERO_BUILDERS_V2[id]() : look ? buildFromLook(look) : HERO_BUILDERS[id]();
   if (corrupted) corrupt(m.group);
   if (glb) upgradeToGLB(m, glb, corrupted);
   return m;

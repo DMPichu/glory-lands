@@ -321,3 +321,11 @@ body:has(#deadScreen[style*="flex"]) #view { filter: grayscale(0.85) brightness(
 @media (max-width: 1500px) { #bottom { left: calc(50% - 150px); } }
 @media (max-width: 1150px) { #miniWrap { transform: scale(0.75); transform-origin: bottom right; } #bottom { left: 50%; } }
 @media (max-width: 760px) { #miniWrap { display: none; } }
+
+/* menú compacto para 27 héroes: retrato, nombre y rol (el resto va en el panel de detalle) */
+#heroCards { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+#heroCards .card { padding: 10px 6px 9px; border-radius: 12px; }
+#heroCards .cport { width: 54px; height: 54px; font-size: 24px; margin-bottom: 5px; }
+#heroCards .cname { font-size: 13.5px; line-height: 1.15; }
+#heroCards .ctitle, #heroCards .cquote { display: none; }
+#heroCards .crole { font-size: 10.5px; padding: 2px 8px; margin-top: 5px; }
