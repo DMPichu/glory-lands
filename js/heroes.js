@@ -87,83 +87,116 @@ function faceTexture(o) {
   const key = JSON.stringify(o);
   if (faceCache.has(key)) return faceCache.get(key);
   const c = document.createElement('canvas');
-  c.width = c.height = 256;
+  c.width = c.height = 512;
   const x = c.getContext('2d');
-  const eyeY = 138, dx = 48;
-  // ojos almendrados (no de muñeca): blanco visible, iris mediano, un solo brillo
-  const ew = o.female ? 25 : 23, eh = o.female ? 16 : 13;
-  x.lineCap = 'round';
+  x.scale(2, 2); // se dibuja en coordenadas de 256 con el doble de resolución
+  x.lineCap = 'round'; x.lineJoin = 'round';
+  const F = !!o.female;
+  const eyeY = 140, dx = F ? 47 : 45;
+  // ojos de anime: grandes y verticales (más en las chicas)
+  const ew = F ? 27 : 24;          // media anchura del ojo
+  const irx = F ? 15.5 : 13, iry = F ? 21 : 17; // iris (elipse vertical)
   if (o.paint) { // pintura de guerra (Astrid): franja suave detrás de los ojos
     x.fillStyle = o.paint; x.globalAlpha = 0.5;
-    x.beginPath(); x.ellipse(128, eyeY - 2, 100, 18, 0, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
+    x.beginPath(); x.ellipse(128, eyeY - 2, 104, 20, 0, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
   }
-  if (o.female) { // rubor muy suave
-    for (const s of [-1, 1]) {
-      const g = x.createRadialGradient(128 + s * 64, eyeY + 34, 2, 128 + s * 64, eyeY + 34, 16);
-      g.addColorStop(0, 'rgba(255,130,150,0.22)'); g.addColorStop(1, 'rgba(255,130,150,0)');
-      x.fillStyle = g; x.fillRect(128 + s * 64 - 18, eyeY + 16, 36, 36);
+  // rubor con rayitas
+  for (const s of [-1, 1]) {
+    const cx = 128 + s * 66, cy = eyeY + 34;
+    const g = x.createRadialGradient(cx, cy, 2, cx, cy, F ? 20 : 15);
+    g.addColorStop(0, F ? 'rgba(255,120,140,0.38)' : 'rgba(230,120,120,0.18)'); g.addColorStop(1, 'rgba(255,120,140,0)');
+    x.fillStyle = g; x.fillRect(cx - 22, cy - 22, 44, 44);
+    if (F) {
+      x.strokeStyle = 'rgba(230,90,110,0.45)'; x.lineWidth = 1.6;
+      for (let i = -1; i <= 1; i++) { x.beginPath(); x.moveTo(cx + i * 7 - 2, cy + 4); x.lineTo(cx + i * 7 + 3, cy - 4); x.stroke(); }
     }
   }
-  const almond = (cx, s, grow = 0) => {
-    x.beginPath();
-    x.moveTo(cx - s * (ew + grow), eyeY + 2);
-    x.quadraticCurveTo(cx - s * 4, eyeY - eh * 1.7 - grow, cx + s * (ew + grow), eyeY - eh * 0.35);
-    x.quadraticCurveTo(cx + s * 4, eyeY + eh * 1.25 + grow, cx - s * (ew + grow), eyeY + 2);
-    x.closePath();
-  };
   for (const s of [-1, 1]) {
     const cx = 128 + s * dx;
     if (o.closed) { // ojos cerrados y serenos (Grimdarkus)
       x.strokeStyle = o.lash; x.lineWidth = 5;
-      x.beginPath(); x.moveTo(cx - ew, eyeY); x.quadraticCurveTo(cx, eyeY + 8, cx + ew, eyeY - 2); x.stroke();
+      x.beginPath(); x.moveTo(cx - ew, eyeY); x.quadraticCurveTo(cx, eyeY + 10, cx + ew, eyeY - 2); x.stroke();
     } else {
+      // forma del ojo: arriba casi plano (la línea de pestañas), abajo redondeado
+      const top = eyeY - iry - 2, bot = eyeY + iry * 0.95;
+      const shape = () => {
+        x.beginPath();
+        x.moveTo(cx - s * ew, eyeY - 4);
+        x.bezierCurveTo(cx - s * ew * 0.6, top - 3, cx + s * ew * 0.5, top - 4, cx + s * ew, top + 6);
+        x.bezierCurveTo(cx + s * (ew + 2), eyeY + 6, cx + s * ew * 0.4, bot + 2, cx, bot);
+        x.bezierCurveTo(cx - s * ew * 0.6, bot - 1, cx - s * ew, eyeY + 6, cx - s * ew, eyeY - 4);
+        x.closePath();
+      };
       x.save();
-      almond(cx, s); x.fillStyle = '#fbf8f4'; x.fill(); x.clip();
-      const ir = x.createRadialGradient(cx, eyeY - 4, 1, cx, eyeY, eh * 1.15);
-      ir.addColorStop(0, o.irisLight || '#ffffff'); ir.addColorStop(0.45, o.iris); ir.addColorStop(1, o.irisDark || '#140f22');
-      x.fillStyle = ir;
-      x.beginPath(); x.arc(cx + s * 2, eyeY, eh * 1.12, 0, Math.PI * 2); x.fill();
-      x.fillStyle = 'rgba(12,8,20,0.9)';
-      x.beginPath(); x.arc(cx + s * 2, eyeY + 1, eh * 0.45, 0, Math.PI * 2); x.fill();
-      x.fillStyle = 'rgba(255,255,255,0.9)';
-      x.beginPath(); x.arc(cx - 4, eyeY - eh * 0.45, eh * 0.28, 0, Math.PI * 2); x.fill();
+      shape(); x.fillStyle = '#fdfbf8'; x.fill(); x.clip();
+      // sombra del párpado sobre el blanco
+      x.fillStyle = 'rgba(120,110,150,0.25)'; x.fillRect(cx - ew - 4, top - 6, ew * 2 + 8, 9);
+      // iris: degradado vertical (oscuro arriba, claro abajo) y aro exterior
+      const icx = cx + s * 1.5, icy = eyeY + 1;
+      const gi = x.createLinearGradient(0, icy - iry, 0, icy + iry);
+      gi.addColorStop(0, o.irisDark || '#140f22'); gi.addColorStop(0.45, o.iris); gi.addColorStop(1, o.irisLight || '#ffffff');
+      x.fillStyle = gi;
+      x.beginPath(); x.ellipse(icx, icy, irx, iry, 0, 0, Math.PI * 2); x.fill();
+      x.strokeStyle = o.irisDark || '#140f22'; x.lineWidth = 2;
+      x.beginPath(); x.ellipse(icx, icy, irx, iry, 0, 0, Math.PI * 2); x.stroke();
+      // pupila
+      x.fillStyle = 'rgba(10,6,18,0.92)';
+      x.beginPath(); x.ellipse(icx, icy - 1, irx * 0.42, iry * 0.48, 0, 0, Math.PI * 2); x.fill();
+      // reflejo de color en la parte baja del iris
+      x.fillStyle = 'rgba(255,255,255,0.22)';
+      x.beginPath(); x.ellipse(icx, icy + iry * 0.55, irx * 0.6, iry * 0.25, 0, 0, Math.PI * 2); x.fill();
+      // brillos: uno grande arriba y uno pequeño abajo
+      x.fillStyle = '#ffffff';
+      x.beginPath(); x.ellipse(icx - s * irx * 0.35, icy - iry * 0.42, irx * 0.32, iry * 0.26, -0.4 * s, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.arc(icx + s * irx * 0.4, icy + iry * 0.38, irx * 0.14, 0, Math.PI * 2); x.fill();
       x.restore();
-      // párpado superior marcado y línea inferior suave
-      x.strokeStyle = o.lash; x.lineWidth = o.female ? 5 : 4.5;
-      x.beginPath(); x.moveTo(cx - s * (ew + 1), eyeY + 2); x.quadraticCurveTo(cx - s * 4, eyeY - eh * 1.75, cx + s * (ew + 3), eyeY - eh * 0.45); x.stroke();
-      if (o.female) { x.lineWidth = 3; x.beginPath(); x.moveTo(cx + s * (ew + 2), eyeY - eh * 0.45); x.lineTo(cx + s * (ew + 9), eyeY - eh * 0.95); x.stroke(); }
-      x.strokeStyle = 'rgba(80,40,40,0.35)'; x.lineWidth = 2;
-      x.beginPath(); x.moveTo(cx - s * ew * 0.6, eyeY + eh * 0.95); x.quadraticCurveTo(cx, eyeY + eh * 1.2, cx + s * ew * 0.8, eyeY + eh * 0.5); x.stroke();
+      // línea de pestañas superior, gruesa y con rabillo en las chicas
+      x.strokeStyle = o.lash; x.fillStyle = o.lash;
+      x.lineWidth = F ? 6 : 5;
+      x.beginPath();
+      x.moveTo(cx - s * (ew + 1), eyeY - 2);
+      x.bezierCurveTo(cx - s * ew * 0.6, top - 5, cx + s * ew * 0.5, top - 6, cx + s * (ew + 2), top + 5);
+      x.stroke();
+      if (F) {
+        x.lineWidth = 3.5;
+        x.beginPath(); x.moveTo(cx + s * (ew - 2), top + 3); x.quadraticCurveTo(cx + s * (ew + 8), top, cx + s * (ew + 12), top - 6); x.stroke();
+      }
+      // línea inferior corta y suave
+      x.strokeStyle = 'rgba(70,40,50,0.45)'; x.lineWidth = 2;
+      x.beginPath(); x.moveTo(cx + s * ew * 0.2, bot + 1); x.quadraticCurveTo(cx + s * ew * 0.75, bot - 2, cx + s * ew, eyeY + 4); x.stroke();
     }
-    // cejas
-    x.strokeStyle = o.brow; x.lineWidth = o.female ? 3.5 : 5;
-    const by = eyeY - eh * 2.2 - (o.female ? 4 : 0);
-    x.beginPath(); x.moveTo(cx - s * 20, by + 5); x.quadraticCurveTo(cx, by - 4 + (o.frown ? 3 : 0), cx + s * 22, by + (o.frown ? 6 : 2)); x.stroke();
+    // cejas finas, altas
+    x.strokeStyle = o.brow; x.lineWidth = F ? 3 : 4.5;
+    const by = eyeY - iry - (F ? 18 : 14);
+    x.beginPath(); x.moveTo(cx - s * 16, by + 4 + (o.frown ? -3 : 0)); x.quadraticCurveTo(cx + s * 2, by - 3 + (o.frown ? 4 : 0), cx + s * 22, by + (o.frown ? 7 : 3)); x.stroke();
   }
   // brillo sutil en los ojos (Ikaruus, Crixus, Catarina)
   if (o.glow) {
     x.globalCompositeOperation = 'lighter';
     for (const s of [-1, 1]) {
-      const g = x.createRadialGradient(128 + s * dx, eyeY, 1, 128 + s * dx, eyeY, 22);
+      const g = x.createRadialGradient(128 + s * dx, eyeY, 1, 128 + s * dx, eyeY, 26);
       g.addColorStop(0, o.glow.replace(/[\d.]+\)$/, '0.35)')); g.addColorStop(1, 'rgba(0,0,0,0)');
-      x.fillStyle = g; x.fillRect(128 + s * dx - 22, eyeY - 22, 44, 44);
+      x.fillStyle = g; x.fillRect(128 + s * dx - 26, eyeY - 26, 52, 52);
     }
     x.globalCompositeOperation = 'source-over';
   }
-  // nariz insinuada
-  x.strokeStyle = 'rgba(140,70,60,0.35)'; x.lineWidth = 2.5;
-  x.beginPath(); x.moveTo(126, eyeY + 36); x.lineTo(130, eyeY + 44); x.stroke();
-  // boquita sonriente
-  x.strokeStyle = o.mouth || '#a8505a'; x.lineWidth = 3;
-  x.beginPath(); x.moveTo(119, eyeY + 60); x.quadraticCurveTo(128, eyeY + (o.frown ? 61 : 65), 137, eyeY + 60); x.stroke();
+  // nariz: apenas una sombra
+  x.fillStyle = 'rgba(170,90,80,0.35)';
+  x.beginPath(); x.ellipse(129, eyeY + 40, 2.2, 1.6, 0, 0, Math.PI * 2); x.fill();
+  // boca pequeña
+  x.strokeStyle = o.mouth || '#9a3a48'; x.lineWidth = 2.6;
+  x.beginPath();
+  if (o.frown) { x.moveTo(121, eyeY + 60); x.quadraticCurveTo(128, eyeY + 57, 135, eyeY + 60); }
+  else { x.moveTo(121, eyeY + 57); x.quadraticCurveTo(128, eyeY + 63, 135, eyeY + 57); }
+  x.stroke();
   if (o.beard) { // perilla y bigote (Kouji)
     x.fillStyle = o.beard;
-    x.beginPath(); x.ellipse(116, eyeY + 56, 13, 5, 0.25, 0, Math.PI * 2); x.ellipse(140, eyeY + 56, 13, 5, -0.25, 0, Math.PI * 2); x.fill();
-    x.beginPath(); x.moveTo(118, eyeY + 74); x.quadraticCurveTo(128, eyeY + 104, 138, eyeY + 74); x.fill();
+    x.beginPath(); x.ellipse(116, eyeY + 53, 13, 4.5, 0.25, 0, Math.PI * 2); x.ellipse(140, eyeY + 53, 13, 4.5, -0.25, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.moveTo(118, eyeY + 72); x.quadraticCurveTo(128, eyeY + 102, 138, eyeY + 72); x.fill();
   }
   if (o.scar) {
     x.strokeStyle = o.scar; x.lineWidth = 2.5;
-    x.beginPath(); x.moveTo(176, eyeY + 18); x.lineTo(186, eyeY + 42); x.stroke();
+    x.beginPath(); x.moveTo(178, eyeY + 20); x.lineTo(188, eyeY + 44); x.stroke();
   }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
@@ -908,9 +941,9 @@ export function buildFromLook(L) {
     H.add(sc(m(sph(0.25, 18), hc, 0.03, 0.2, -0.02), 1.15, 0.42, 1.15));
   } else if (L.hat === 'hood' || L.hat === 'catHood') {
     const hm = mat(L.hatColor ?? L.top, { r: 0.7, side: DS });
-    H.add(m(capSph(0.3, 0, 1.05), hm, 0, 0.02, -0.01));
-    H.add(m(capSph(0.3, 0, 2.5, Math.PI, Math.PI), hm, 0, 0.02, -0.02));
-    for (const s of [-1, 1]) H.add(m(box(0.025, 0.4, 0.06), ha, s * 0.27, -0.05, 0.12, 0, 0, -s * 0.12));
+    // capucha abierta por delante que enmarca la cara, con ribete
+    H.add(m(capSph(0.3, 0, 2.25, Math.PI / 2 + 1.0, Math.PI * 2 - 2.0), hm, 0, 0.02, -0.02));
+    for (const s of [-1, 1]) H.add(m(lock(0.028, 0.4), ha, s * 0.235, -0.06, 0.13, 0, 0, s * 0.08));
     if (L.hat === 'catHood') for (const s of [-1, 1]) H.add(m(cone(0.09, 0.2, 4), hm, s * 0.16, 0.3, -0.02, 0, 0, -s * 0.3));
     p.body.add(m(capeGeo(0.55, 1.0, 0.3, 0.4), hm, 0, 1.15, -0.2));
   } else if (helm) {
@@ -941,10 +974,11 @@ export function buildFromLook(L) {
     H.add(m(sph(0.035, 8), bm, 0, 0.25, -0.02));
   }
 
-  // ropa: cinturón, hombreras y falda o faldón con el color de acento
-  p.body.add(m(cyl(0.2, 0.2, 0.06), accent, 0, 1.1, 0));
-  for (const sx of [-1, 1]) p.body.add(sc(m(sph(0.115, 10), accent, sx * 0.27, 1.6, 0), 1.1, 0.6, 1));
-  p.body.add(m(box(0.12, 0.3, 0.04), accent, 0, 1.38, 0.21));
+  // ropa: cinturón y cuello con el color de acento, hombreras solo con armadura,
+  // y falda o faldón
+  p.body.add(m(cyl(0.2, 0.2, 0.045), accent, 0, 1.1, 0));
+  p.body.add(m(tor(0.075, 0.016, Math.PI * 2, 6), accent, 0, 1.63, 0.01, Math.PI / 2));
+  if (L.pauldrons) for (const sx of [-1, 1]) p.body.add(sc(m(sph(0.115, 12), accent, sx * 0.27, 1.6, 0), 1.1, 0.6, 1));
   if (L.female) {
     p.body.add(m(cyl(0.2, 0.36, 0.5, 14), mat(L.top, { r: 0.6, m: L.topM ?? 0.05 }), 0, 0.84, 0));
     p.body.add(m(tor(0.355, 0.016, Math.PI * 2, 6), accent, 0, 0.6, 0, Math.PI / 2));
@@ -965,7 +999,7 @@ export function buildFromLook(L) {
     st2.add(m(cyl(0.025, 0.03, 1.5, 6), mat(0x3a2a1a), 0, 0.4, 0));
     st2.add(m(w === 'candle' ? cyl(0.05, 0.05, 0.16, 8) : oct(0.1), w === 'candle' ? mat(0xfff4e0) : glowM, 0, 1.2, 0));
     if (w === 'candle') st2.add(m(cone(0.04, 0.12, 6), mat(0xffe060, { e: 0xffb000, ei: 2 }), 0, 1.34, 0));
-    st2.rotation.x = Math.PI / 2.4; st2.position.set(0, 0, 0.05);
+    st2.rotation.x = 0.2; st2.position.set(0, -0.3, 0.06); // bastón casi vertical, apoyado
     p.handR.add(st2);
   } else if (w === 'book') {
     const book = new THREE.Group();

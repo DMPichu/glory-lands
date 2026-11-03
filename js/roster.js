@@ -43,7 +43,7 @@ const NEW = {
         'Salta sobre el héroe enemigo más cercano al cursor y lo golpea: 200/325/450 (+120 % AD) y un 30 % de la vida que le falta.'),
     ],
     build: ['sword', 'scope', 'boots', 'katana', 'shield', 'fang'], prio: [0, 1, 2],
-    look: { beast: { kind: 'lion', fur: 0xc8903c, muzzle: 0xe8c890, mane: 0x8a5a24, eye: 0xffb030 }, top: 0x6a4a30, accent: 0xb8bcc8, pants: 0x3a2a20, weapon: 'sword', bulky: true, cape: 0x2a3a5a },
+    look: { beast: { kind: 'lion', fur: 0xc8903c, muzzle: 0xe8c890, mane: 0x8a5a24, eye: 0xffb030 }, top: 0x6a4a30, accent: 0xb8bcc8, pants: 0x3a2a20, weapon: 'sword', bulky: true, cape: 0x2a3a5a, pauldrons: true },
   },
   // ------------------------------------------------------------ POLETT
   polett: {
@@ -308,7 +308,7 @@ const NEW = {
         'Una tormenta cubre la zona 4 s: daño continuo y aturdimientos al azar.', { radius: 5 }),
     ],
     build: ['tome', 'crystal', 'boots', 'staff', 'cloak', 'moon'], prio: [0, 2, 1],
-    look: { beast: { kind: 'cat', fur: 0x1a1a1e, muzzle: 0xf4f0ec, eye: 0xffd040 }, top: 0x8a8e98, topM: 0.7, accent: 0x6a2a8a, pants: 0x1e1a24, weapon: 'candle', female: true, hat: 'witch', hatColor: 0x3a2a4a, hatAccent: 0x9a4ad8 },
+    look: { beast: { kind: 'cat', fur: 0x1a1a1e, muzzle: 0xf4f0ec, eye: 0xffd040 }, top: 0x8a8e98, topM: 0.7, accent: 0x6a2a8a, pants: 0x1e1a24, weapon: 'candle', female: true, hat: 'witch', hatColor: 0x3a2a4a, hatAccent: 0x9a4ad8, pauldrons: true },
   },
   // ------------------------------------------------------------ CABBO
   cabbo: {
@@ -327,7 +327,7 @@ const NEW = {
         'Cura 150/230/310 (+60 % AP) y da un escudo a todos los aliados en 10 m.'),
     ],
     build: ['heart', 'tear', 'boots', 'shield', 'aegis', 'cloak'], prio: [1, 0, 2],
-    look: { skin: 0xd8a880, top: 0x6a2a7a, accent: 0xd04a3a, pants: 0x4a1e5a, weapon: 'fists', hat: 'helm', hatColor: 0xb8bcc8, hatAccent: 0x8a3a9a, bulky: true },
+    look: { skin: 0xd8a880, top: 0x6a2a7a, accent: 0xd04a3a, pants: 0x4a1e5a, weapon: 'fists', hat: 'helm', hatColor: 0xb8bcc8, hatAccent: 0x8a3a9a, bulky: true, pauldrons: true },
   },
   // ------------------------------------------------------------ KONTA
   konta: {
