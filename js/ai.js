@@ -20,7 +20,9 @@ export function heroAI(g, u, dt) {
   const fountain = LAYOUT[u.team].fountain;
   const hpR = u.hp / u.maxHp;
   const inFountain = g.nearFountain(u, u.team, CONST.fountainRadius - 1);
-  const lane = u.lane || 'mid';
+  // a mitad de partida el equipo se agrupa en un mismo carril para empujar
+  const plan = teamPlan(g, u.team);
+  const lane = plan.lane && hpR > 0.45 ? plan.lane : u.lane || 'mid';
   // punto del carril a «s» metros de la base azul, con un pequeño desplazamiento propio
   const laneSpot = (sv) => { const q = lanePoint(lane, sv); return V(q.x + ai.ox, q.z + ai.oz); };
 
@@ -73,6 +75,13 @@ export function heroAI(g, u, dt) {
     useAbilities(g, u, { fight: true, enemy: fightTarget });
     if (!u.channel && !u.dash) g.orderAttack(u, fightTarget);
     return;
+  }
+
+  // --- ayudar a un aliado que está peleando cerca
+  if (hpR > 0.5) {
+    const ally = g.heroes.find((h) => h !== u && h.alive && h.team === u.team && dist2(h.pos, u.pos) < 26 && dist2(h.pos, u.pos) > 8
+      && g.heroes.some((e) => e.alive && e.team === enemyTeam && dist2(e.pos, h.pos) < 10));
+    if (ally) { g.orderMove(u, V(ally.pos.x, ally.pos.z)); return; }
   }
 
   // Si nos está golpeando una torre, salir de su alcance
@@ -133,7 +142,15 @@ export function heroAI(g, u, dt) {
       if (dist2(s.pos, target) < s.base.range + 2) sTarget = progress(s) - dir * (s.base.range + 2.5);
     }
   }
-  const target = laneSpot(sTarget);
+  let target = laneSpot(sTarget);
+  if (plan.lane) {
+    // esperar a los compañeros: no ir muy por delante del grupo
+    const mates = g.heroes.filter((h) => h.alive && h.team === u.team && h !== u);
+    const near = mates.filter((h) => dist2(h.pos, target) < 16).length;
+    const coming = mates.filter((h) => h.ai?.lastLane === lane).length;
+    if (near < Math.min(2, coming)) target = laneSpot(sTarget - dir * 10);
+  }
+  ai.lastLane = lane;
   if (dist2(target, u.pos) > 1.5) g.orderMove(u, target);
 }
 
@@ -165,6 +182,28 @@ function jungleAI(g, u, hpR) {
   if (!mon) return false;
   g.orderAttack(u, mon);
   return true;
+}
+
+// Plan de equipo (se recalcula cada 6 s): desde el minuto 8, o en cuanto el equipo
+// ha derribado una torre, todos los bots van al carril donde la torre enemiga más
+// adelantada tenga menos vida.
+function teamPlan(g, team) {
+  g.plans ||= {};
+  const p = (g.plans[team] ||= { t: -99, lane: null });
+  if (g.time - p.t < 6) return p;
+  p.t = g.time;
+  const enemy = g.enemiesOf(team);
+  const fallen = g.units.filter((s) => s.kind === 'tower' && s.team === enemy && !s.alive).length;
+  if (g.time < 480 && fallen === 0) { p.lane = null; return p; }
+  let best = null, bestHp = Infinity;
+  for (const lane of ['top', 'mid', 'bot']) {
+    const towers = g.units.filter((s) => s.kind === 'tower' && s.team === enemy && s.lane === lane && s.alive);
+    const front = towers.find((s) => !s.protected) || towers[0];
+    const hp = front ? front.hp : 0; // carril ya abierto: ir a por la base
+    if (hp < bestHp) { bestHp = hp; best = lane; }
+  }
+  p.lane = best;
+  return p;
 }
 
 // ¿Es seguro estar en esta posición respecto a las estructuras enemigas?

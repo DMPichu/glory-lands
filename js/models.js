@@ -1098,7 +1098,9 @@ function groundTextures() {
         const t = rnd(), off = (rnd() - 0.5) * MAP.laneHalf * 1.9;
         const px = ax + (bx - ax) * t + (-(bz - az) / len) * off, pz = az + (bz - az) * t + ((bx - ax) / len) * off;
         const red = redness(px);
-        x.fillStyle = red > 0.5 ? `rgba(${30 + rnd() * 40},${25 + rnd() * 25},${35 + rnd() * 30},0.5)` : `rgba(${120 + rnd() * 60},${100 + rnd() * 50},${70 + rnd() * 40},0.5)`;
+        // piedrecitas de tono parecido al camino (con poco contraste, para que no parezca confeti)
+        const v = rnd() * 30;
+        x.fillStyle = red > 0.5 ? `rgba(${55 + v},${45 + v},${55 + v},0.22)` : `rgba(${140 + v},${118 + v},${84 + v},0.25)`;
         const s = (0.2 + rnd() * 0.5) * k;
         x.fillRect(sx(px), sz(pz), s, s);
       }

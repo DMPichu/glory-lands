@@ -33,6 +33,7 @@ export class UI {
       else this.message(`${L(killer) || 'Una torre'} ha derrotado a ${L(victim)}`, victim.team === p.team ? 'danger' : 'good');
     });
     game.on('heroKilled', (e) => this.announceKill(e));
+    game.on('heroKilled', ({ victim }) => (this.deathMarks ||= []).push({ x: victim.pos.x, z: victim.pos.z, t: this.g.time, ally: victim.team === this.g.player.team }));
     game.on('epicKilled', ({ monster, team }) => this.banner(`¡${monster.name} derrotado!`, team === this.g.player.team ? 'good' : 'danger', team === this.g.player.team ? 'Bendición para todo el equipo' : 'La Legión recibe su bendición'));
     game.on('towerDestroyed', ({ tower }) => {
       const ours = tower.team === this.g.player.team;
@@ -287,6 +288,7 @@ export class UI {
     $('mpText').textContent = `${Math.floor(p.mp)} / ${Math.round(p.maxMp)}`;
     const xpR = p.level >= CONST.maxLevel ? 1 : p.xp / xpToNext(p.level);
     $('xpFill').style.width = xpR * 100 + '%';
+    $('portraitWrap').style.setProperty('--xp', (xpR * 100).toFixed(1));
     $('level').textContent = p.level;
     $('gold').textContent = Math.floor(p.gold);
     $('kda').textContent = `${p.kills} / ${p.deaths} / ${p.assists} · ${p.cs} súbditos`;
@@ -298,7 +300,8 @@ export class UI {
       $('furyFill').classList.toggle('on', !!on);
     }
     // estadísticas
-    $('stats').innerHTML = `⚔️ ${Math.round(g.stat(p, 'ad'))} · ✨ ${Math.round(g.stat(p, 'ap'))} · 🛡️ ${Math.round(g.stat(p, 'armor'))} · 🔮 ${Math.round(g.stat(p, 'mr'))} · ⚡ ${g.stat(p, 'as').toFixed(2)} · 👢 ${g.stat(p, 'speed').toFixed(1)}`;
+    $('stats').innerHTML = `<div title="Daño de ataque">⚔️ ${Math.round(g.stat(p, 'ad'))}</div><div title="Poder mágico">✨ ${Math.round(g.stat(p, 'ap'))}</div><div title="Velocidad de ataque">⚡ ${g.stat(p, 'as').toFixed(2)}</div>`
+      + `<div title="Armadura">🛡️ ${Math.round(g.stat(p, 'armor'))}</div><div title="Resistencia mágica">🔮 ${Math.round(g.stat(p, 'mr'))}</div><div title="Velocidad de movimiento">👢 ${g.stat(p, 'speed').toFixed(1)}</div>`;
 
     // habilidades
     p.abilities.forEach((a, i) => {
@@ -311,9 +314,9 @@ export class UI {
       el.classList.toggle('nomana', !!noMana);
       el.classList.toggle('ready', a.rank > 0 && a.cd <= 0 && !noMana);
       if (a.cd > 0) {
-        cdEl.style.height = (a.cd / (a.maxCd || 1)) * 100 + '%';
+        cdEl.style.setProperty('--p', ((a.cd / (a.maxCd || 1)) * 100).toFixed(1));
         cdText.textContent = a.cd >= 1 ? Math.ceil(a.cd) : a.cd.toFixed(1);
-      } else { cdEl.style.height = '0%'; cdText.textContent = ''; }
+      } else { cdEl.style.setProperty('--p', 0); cdText.textContent = ''; }
       el.querySelector('.cost').textContent = cost;
       el.querySelectorAll('.pips i').forEach((pip, k) => pip.classList.toggle('on', k < a.rank));
       el.querySelector('.lvl').style.display = g.canLevel(p, i) ? 'block' : 'none';
@@ -511,14 +514,14 @@ export class UI {
     grd.addColorStop(0, '#2e5a2a'); grd.addColorStop(0.5, '#4a5a3a'); grd.addColorStop(0.62, '#3a3240'); grd.addColorStop(1, '#2a2230');
     c.fillStyle = grd; c.fillRect(0, 0, W, H);
     for (const o of this.g.obstacles) { c.fillStyle = o.x < 20 ? 'rgba(20,50,20,0.8)' : 'rgba(30,18,34,0.8)'; c.beginPath(); c.arc(sx(o.x), sz(o.z), Math.max(2, (o.r / (MAP.maxX - MAP.minX)) * W), 0, 7); c.fill(); }
-    c.strokeStyle = 'rgba(70,150,210,0.9)'; c.lineWidth = 4; c.beginPath();
+    c.strokeStyle = 'rgba(70,150,210,0.9)'; c.lineWidth = 4 * W / 300; c.beginPath();
     for (let z = MAP.minZ; z <= MAP.maxZ; z += 4) (z === MAP.minZ ? c.moveTo : c.lineTo).call(c, sx(riverX(z)), sz(z));
     c.stroke();
-    c.strokeStyle = 'rgba(200,175,125,0.75)'; c.lineWidth = 5; c.lineJoin = 'round';
+    c.strokeStyle = 'rgba(200,175,125,0.75)'; c.lineWidth = 6 * W / 300; c.lineJoin = 'round';
     for (const pts of Object.values(LANES)) { c.beginPath(); pts.forEach(([x, z], i) => (i ? c.lineTo(sx(x), sz(z)) : c.moveTo(sx(x), sz(z)))); c.stroke(); }
     for (const [team, col] of [['blue', 'rgba(80,160,255,0.55)'], ['red', 'rgba(255,60,90,0.55)']]) {
       const f = LAYOUT[team].fountain;
-      c.fillStyle = col; c.beginPath(); c.arc(sx(f.x), sz(f.z), 8, 0, 7); c.fill();
+      c.fillStyle = col; c.beginPath(); c.arc(sx(f.x), sz(f.z), 9 * W / 300, 0, 7); c.fill();
     }
     return cv;
   }
@@ -592,22 +595,30 @@ export class UI {
   drawMinimap() {
     const g = this.g, c = this.mctx;
     const W = this.mini.width, H = this.mini.height;
+    const k = W / 300; // escala de los iconos respecto al minimapa original
     const sx = (x) => ((x - MAP.minX) / (MAP.maxX - MAP.minX)) * W;
     const sz = (z) => ((z - MAP.minZ) / (MAP.maxZ - MAP.minZ)) * H;
     this.miniBg ||= this.miniBackground();
     c.drawImage(this.miniBg, 0, 0);
+    // súbditos
     for (const u of g.units) {
-      if (!u.alive && u.kind !== 'tower') continue;
-      const col = u.team === 'blue' ? '#4aa3ff' : '#ff4a5a';
-      if (u.kind === 'tower' || u.kind === 'nexus' || u.kind === 'boss') {
-        c.fillStyle = u.alive ? col : '#555';
-        const s = u.kind === 'tower' ? 8 : 12;
-        c.fillRect(sx(u.pos.x) - s / 2, sz(u.pos.z) - s / 2, s, s);
-        c.strokeStyle = '#000'; c.strokeRect(sx(u.pos.x) - s / 2, sz(u.pos.z) - s / 2, s, s);
-      } else if (u.kind === 'minion') {
-        c.fillStyle = col;
-        c.fillRect(sx(u.pos.x) - 1.5, sz(u.pos.z) - 1.5, 3, 3);
-      }
+      if (!u.alive || u.kind !== 'minion') continue;
+      c.fillStyle = u.team === 'blue' ? '#7ab8ff' : '#ff7a8a';
+      c.beginPath(); c.arc(sx(u.pos.x), sz(u.pos.z), (u.superMinion ? 2.6 : 1.8) * k, 0, 7); c.fill();
+    }
+    // estructuras: torres como escudos, bases como estrellas
+    for (const u of g.units) {
+      if (!['tower', 'nexus', 'boss'].includes(u.kind)) continue;
+      const x = sx(u.pos.x), y = sz(u.pos.z), r = (u.kind === 'tower' ? 5 : 8) * k;
+      const col = !u.alive ? '#4a4a52' : u.team === 'blue' ? '#4aa3ff' : '#ff4a5a';
+      c.save(); c.translate(x, y);
+      c.beginPath();
+      if (u.kind === 'tower') { c.moveTo(0, -r); c.lineTo(r, -r * 0.4); c.lineTo(r * 0.7, r * 0.6); c.lineTo(0, r); c.lineTo(-r * 0.7, r * 0.6); c.lineTo(-r, -r * 0.4); }
+      else for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2 - Math.PI / 2, rr = i % 2 ? r * 0.5 : r; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+      c.closePath();
+      c.fillStyle = col; c.fill();
+      c.lineWidth = 1.5 * k; c.strokeStyle = u.protected && u.alive ? '#cfcfcf' : '#0a0810'; c.stroke();
+      c.restore();
     }
     // campamentos de la jungla: icono si están vivos, segundos que faltan si no
     for (const camp of g.camps || []) {
@@ -615,28 +626,35 @@ export class UI {
       const epic = camp.side === 'epic';
       if (camp.alive) {
         c.fillStyle = epic ? '#c8ff40' : '#ffb84a';
-        c.beginPath(); c.arc(x, y, epic ? 5 : 3.2, 0, 7); c.fill();
-        c.strokeStyle = '#000'; c.lineWidth = 1; c.stroke();
+        c.beginPath(); c.arc(x, y, (epic ? 5 : 3.2) * k, 0, 7); c.fill();
+        c.strokeStyle = '#000'; c.lineWidth = k; c.stroke();
       } else if (epic || camp.next - g.time < 30) {
-        c.font = 'bold 9px system-ui, sans-serif';
+        c.font = `bold ${9 * k}px system-ui, sans-serif`;
         c.textAlign = 'center';
         c.fillStyle = epic ? '#e8ffb0' : '#ffe0b0';
-        c.fillText(Math.max(0, Math.ceil(camp.next - g.time)), x, y + 3);
+        c.fillText(Math.max(0, Math.ceil(camp.next - g.time)), x, y + 3 * k);
       }
+    }
+    // marcas de héroes caídos (se desvanecen en 5 s)
+    this.deathMarks = (this.deathMarks || []).filter((d) => g.time - d.t < 5);
+    for (const d of this.deathMarks) {
+      const a = 1 - (g.time - d.t) / 5, x = sx(d.x), y = sz(d.z), r = 4 * k;
+      c.strokeStyle = `rgba(${d.ally ? '255,90,90' : '255,215,0'},${a})`; c.lineWidth = 2 * k;
+      c.beginPath(); c.moveTo(x - r, y - r); c.lineTo(x + r, y + r); c.moveTo(x + r, y - r); c.lineTo(x - r, y + r); c.stroke();
     }
     for (const h of g.heroes) {
       if (!h.alive) continue;
       const col = h.isPlayer ? '#5dff7a' : h.team === 'blue' ? '#4aa3ff' : '#ff4a5a';
       const tok = tokenImage(h.heroId);
-      if (tok) { drawToken(c, tok, sx(h.pos.x), sz(h.pos.z), h.isPlayer ? 9 : 7.5, col); continue; }
+      if (tok) { drawToken(c, tok, sx(h.pos.x), sz(h.pos.z), (h.isPlayer ? 9 : 7.5) * k, col); continue; }
       c.fillStyle = col;
-      c.beginPath(); c.arc(sx(h.pos.x), sz(h.pos.z), h.isPlayer ? 6 : 5, 0, 7); c.fill();
-      c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.stroke();
+      c.beginPath(); c.arc(sx(h.pos.x), sz(h.pos.z), (h.isPlayer ? 6 : 5) * k, 0, 7); c.fill();
+      c.strokeStyle = '#fff'; c.lineWidth = 1.5 * k; c.stroke();
     }
     // vista de la cámara
     const p = g.camPos;
     if (p) {
-      c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 1;
+      c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 1.5 * k;
       const z = g.camZoom;
       c.strokeRect(sx(p.x - 22 * z), sz(p.z - 34 * z), sx(44 * z) - sx(0), sz(28 * z) - sz(0));
     }
