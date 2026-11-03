@@ -719,6 +719,71 @@ function buildCatarina() {
   return { ...f, extra: { sword: sw.g } };
 }
 
+// ------------------------------------------------------------------ héroes nuevos
+// Modelo provisional a partir de una descripción ('look' en js/roster.js): colores,
+// peinado y arma. Se sustituye por uno a medida cuando llegue el token del héroe.
+const hexCss = (h) => '#' + h.toString(16).padStart(6, '0');
+export function buildFromLook(L) {
+  const dark = (h, k = 0.55) => { const c = new THREE.Color(h).multiplyScalar(k); return '#' + c.getHexString(); };
+  const f = figure({ female: !!L.female, skin: L.skin, top: L.top, sleeves: L.top, pants: L.pants, boots: L.boots ?? 0x1e1a18,
+    face: { female: !!L.female, iris: L.eye || '#6a8aff', lash: dark(L.hair, 0.35), brow: dark(L.hair, 0.7) } });
+  const p = f.parts;
+  const hair = mat(L.hair, { r: 0.5 });
+  const accent = mat(L.accent, { m: 0.4, r: 0.45 });
+  if (L.bulky) p.body.scale.set(1.12, 1.02, 1.12);
+  // peinado
+  hairCap(p.head, hair);
+  const st = L.hairStyle;
+  if (st !== 'spiky') bangs(p.head, hair, 9, 0.16);
+  if (st === 'long' || st === 'wild') { longHair(p.head, hair, 0.95, 0.29); sideLocks(p.head, hair, 0.5); }
+  if (st === 'wild') for (let i = 0; i < 7; i++) p.head.add(m(cone(0.08, 0.45, 6), hair, -0.18 + i * 0.06, 0.05, -0.18, 1.0 + (i % 2) * 0.3, 0, (i - 3) * 0.15));
+  if (st === 'ponytail') { p.head.add(m(sph(0.07, 10), hair, 0, 0.12, -0.24)); p.head.add(m(cone(0.09, 0.75, 8), hair, 0, -0.25, -0.3, Math.PI - 0.25)); }
+  if (st === 'twin') for (const sx of [-1, 1]) { p.head.add(m(sph(0.065, 10), accent, sx * 0.2, 0.14, -0.08)); p.head.add(m(cone(0.08, 0.7, 8), hair, sx * 0.26, -0.22, -0.1, Math.PI, 0, sx * 0.15)); }
+  if (st === 'bun') { p.head.add(m(sph(0.1, 12), hair, 0, 0.25, -0.1)); p.head.add(m(tor(0.07, 0.018, Math.PI * 2, 6), accent, 0, 0.21, -0.09, Math.PI / 2 - 0.4)); }
+  if (st === 'spiky') spikes(p.head, hair, 11, 0.24);
+  if (st === 'short') sideLocks(p.head, hair, 0.22);
+  // ropa: cinturón, hombreras y falda o faldón con el color de acento
+  p.body.add(m(cyl(0.2, 0.2, 0.06), accent, 0, 1.1, 0));
+  for (const sx of [-1, 1]) p.body.add(sc(m(sph(0.115, 10), accent, sx * 0.27, 1.6, 0), 1.1, 0.6, 1));
+  p.body.add(m(box(0.12, 0.3, 0.04), accent, 0, 1.38, 0.21));
+  if (L.female) {
+    p.body.add(m(cyl(0.2, 0.36, 0.5, 14), mat(L.top, { r: 0.6 }), 0, 0.84, 0));
+    p.body.add(m(tor(0.355, 0.016, Math.PI * 2, 6), accent, 0, 0.6, 0, Math.PI / 2));
+  } else {
+    p.body.add(m(cyl(0.21, 0.3, 0.42, 14), mat(L.top, { r: 0.6 }), 0, 0.86, 0));
+  }
+  // arma
+  const glowM = mat(L.accent, { e: L.accent, ei: 1.1 });
+  const w = L.weapon;
+  if (w === 'sword' || w === 'twin') {
+    p.handR.add(sword(mat(0xeef0f6, { m: 0.9, r: 0.15 }), accent, 0.9).g);
+    if (w === 'twin') p.handL.add(sword(mat(0xeef0f6, { m: 0.9, r: 0.15 }), accent, 0.75).g);
+  } else if (w === 'katana') p.handR.add(katana(false));
+  else if (w === 'staff' || w === 'candle') {
+    const st2 = new THREE.Group();
+    st2.add(m(cyl(0.025, 0.03, 1.5, 6), mat(0x3a2a1a), 0, 0.4, 0));
+    st2.add(m(w === 'candle' ? cyl(0.05, 0.05, 0.16, 8) : oct(0.1), w === 'candle' ? mat(0xfff4e0) : glowM, 0, 1.2, 0));
+    if (w === 'candle') st2.add(m(cone(0.04, 0.12, 6), mat(0xffe060, { e: 0xffb000, ei: 2 }), 0, 1.34, 0));
+    st2.rotation.x = Math.PI / 2.4; st2.position.set(0, 0, 0.05);
+    p.handR.add(st2);
+  } else if (w === 'hammer' || w === 'axe') {
+    const hm = new THREE.Group();
+    hm.add(m(cyl(0.03, 0.03, 1.1, 6), mat(0x4a3220), 0, 0.4, 0));
+    hm.add(w === 'hammer' ? m(box(0.36, 0.22, 0.22), mat(0x7a7a84, { m: 0.8, r: 0.35 }), 0, 0.95, 0) : m(cyl(0.22, 0.22, 0.04, 16, 1), mat(0xb8bcc8, { m: 0.85, r: 0.25 }), 0.12, 0.88, 0, Math.PI / 2));
+    hm.rotation.x = Math.PI / 2; hm.position.set(0, -0.02, 0.05);
+    p.handR.add(hm);
+  } else if (w === 'daggers') {
+    for (const hd of [p.handR, p.handL]) { const d = sword(mat(0xeef0f6, { m: 0.9, r: 0.15 }), accent, 0.36, 0.05).g; hd.add(d); }
+  } else if (w === 'fan') {
+    const fan = m(cyl(0.3, 0.3, 0.02, 16, 1, false, 0, Math.PI), mat(0xd8f4ff, { side: DS, e: 0x5ac8ff, ei: 0.3 }), 0, 0.15, 0.05, Math.PI / 2);
+    p.handL.add(fan);
+  } else { // puños
+    for (const hd of [p.handR, p.handL]) hd.add(m(sph(0.085, 10), glowM));
+  }
+  void hexCss;
+  return { ...f, extra: {} };
+}
+
 export const HERO_BUILDERS_V2 = {
   josephine: buildJosephine, fotsor: buildFotsor, yeslie: buildYeslie, astrid: buildAstrid, kouji: buildKouji,
   grimdarkus: buildGrimdarkus, ikaruus: buildIkaruus, crixus: buildCrixus, legna: buildLegna, catarina: buildCatarina,

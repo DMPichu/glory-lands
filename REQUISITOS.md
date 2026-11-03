@@ -8,7 +8,8 @@ Lista de lo que hace falta conseguir o crear para que el juego luzca y suene muc
 
 | Prioridad | Qué | Por qué |
 |---|---|---|
-| 🔴 Alta | Modelos 3D animados de los 10 héroes | Es lo que más cambia el aspecto del juego. |
+| 🔴 Alta | **Tokens de los 17 héroes nuevos** | Sin ellos tienen un aspecto provisional (colores, peinado y arma inventados). |
+| 🔴 Alta | Modelos 3D animados de los héroes | Es lo que más cambia el aspecto del juego. |
 | 🔴 Alta | Música y efectos de sonido básicos | Ahora el juego no tiene sonido. |
 | 🟠 Media | Retratos de los héroes e iconos de habilidades y objetos | Sustituyen a la letra inicial y a los emojis. |
 | 🟠 Media | Modelos de súbditos, torres, Torre de Zugri y Lorik | Completan el aspecto del campo de batalla. |
@@ -188,3 +189,12 @@ Más allá del material, el juego crecería con estas decisiones tuyas:
 3. **Más héroes:** candidatos con buen material son Bitten, El Mago Larg o una versión jugable de Zodiark (con otro nombre).
 4. **Aspectos alternativos:** por ejemplo, la forma humana de Fotsor.
 5. **Modo multijugador** entre personas: es un cambio grande que necesitaría un servidor.
+
+
+## Tokens de los héroes nuevos 🔴
+
+Súbelos a `_entrada/` con el nombre del héroe (por ejemplo `hermes.png`). Con ellos se hace su modelo a medida (pelo, ropa, colores y arma) como con los 10 primeros.
+
+`hermes`, `polett`, `belian`, `vallentine`, `emmeline`, `lucille`, `esperanza`, `fuyumi`, `slinxi`, `umi`, `zeflie`, `zestari`, `xeluna`, `vrizahl`, `candle`, `cabbo`, `konta`.
+
+Ayuda mucho una nota con lo que no se ve en el token: el arma, el cuerpo y la ropa de cintura para abajo.

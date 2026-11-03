@@ -381,6 +381,7 @@ export class UI {
     };
     for (const u of g.units) {
       if (!u.alive) continue;
+      if (g.hasBuff(u, 'stealth') && u.team !== g.player.team) continue; // enemigo en sigilo
       const s = project(u.pos.x, u.height + (u.dragon ? 1.2 : 0.35), u.pos.z);
       if (!s || s.x < -60 || s.x > w + 60 || s.y < -40 || s.y > h + 40) continue;
       const ally = u.team === g.player.team;
@@ -644,6 +645,7 @@ export class UI {
     }
     for (const h of g.heroes) {
       if (!h.alive) continue;
+      if (g.hasBuff(h, 'stealth') && h.team !== g.player.team) continue;
       const col = h.isPlayer ? '#5dff7a' : h.team === 'blue' ? '#4aa3ff' : '#ff4a5a';
       const tok = tokenImage(h.heroId);
       if (tok) { drawToken(c, tok, sx(h.pos.x), sz(h.pos.z), (h.isPlayer ? 9 : 7.5) * k, col); continue; }

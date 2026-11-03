@@ -167,10 +167,16 @@ function jungleAI(g, u, hpR) {
     const mon = g.nearest(camp.units.filter((m) => m.alive), u.pos);
     if (mon) { g.orderAttack(u, mon); return true; }
   }
-  // campamentos menores cercanos cuando el carril está tranquilo
+  // campamentos menores cercanos cuando el carril está tranquilo (solo los que
+  // puede derrotar: los grandes, desde el nivel 5; y si la vida del campamento no
+  // es desproporcionada para su daño)
   let best = null, bd = 32;
   for (const camp of g.camps) {
     if (camp.side === 'epic' || !camp.alive) continue;
+    const big = camp.units.some((m) => m.base?.buff);
+    if (u.level < (big ? 5 : 3)) continue;
+    const campHp = camp.units.reduce((a, m) => a + (m.alive ? m.hp : 0), 0);
+    if (campHp > g.stat(u, 'ad') * g.stat(u, 'as') * 22 + g.stat(u, 'ap') * 8) continue;
     const d = dist2(camp.pos, u.pos);
     if (d < bd) { bd = d; best = camp; }
   }
@@ -250,6 +256,28 @@ function useAbilities(g, u, ctx) {
     const def = u.abilities[i].def;
     const cast = (p, t) => g.castAbility(u, i, p, t);
     switch (def.ai) {
+      case 'execute':
+        if (e && fight && dE < def.range && (eR < 0.45 || hpR < 0.3)) cast(e.pos);
+        break;
+      case 'nova': {
+        const foes = g.enemiesInRadius(u.team, u.pos, (def.radius ?? 4) - 0.5, ['hero']).length;
+        if (fight && foes >= 1) cast(u.pos);
+        else if (ctx.farm && mpR > 0.6 && g.enemiesInRadius(u.team, u.pos, (def.radius ?? 4) - 0.5, ['minion']).length >= 4) cast(u.pos);
+        break;
+      }
+      case 'waveclear':
+        if ((fight && dE < (def.radius ?? 4)) || (ctx.farm && g.enemiesInRadius(u.team, u.pos, (def.radius ?? 4) - 0.5, ['minion']).length >= 2)) cast(u.pos);
+        break;
+      case 'selfShield':
+        if ((fight && dE < 7) && hpR < 0.85) cast(u.pos);
+        else if (hpR < 0.4 && e && dE < 10) cast(u.pos);
+        break;
+      case 'stealthIn':
+        if ((fight && dE < 9 && dE > 3) || (ctx.retreat && e && dE < 8)) cast(u.pos);
+        break;
+      case 'prison':
+        if (e && fight && dE < def.range && (eR > 0.5 || hpR < 0.4)) cast(e.pos);
+        break;
       case 'selfFight':
         if (fight && dE < 6.5) cast(u.pos);
         break;

@@ -7,6 +7,8 @@ import { Effects } from './effects.js';
 import { ABILITY_IMPL, PASSIVE_IMPL } from './abilities.js';
 import { heroAI, minionAI, structureAI } from './ai.js';
 import { sfx, voice } from './audio.js';
+import './roster.js'; // héroes nuevos y rework de Catarina (antes de usar HEROES)
+import { KIT, consumeAmp } from './kit.js';
 import { setupJungle, updateJungle, monsterAI, monsterHit, monsterKilled } from './jungle.js';
 
 const TMP = new THREE.Vector3();
@@ -265,6 +267,8 @@ export class Game {
   attackRange(u) {
     if (u.kind === 'hero') {
       if (this.getBuff(u, 'jos_q')) return 6;
+      const kr = this.getBuff(u, 'kit_ranged'); // esferas de fuego verde de Umi
+      if (kr) return kr.value;
       return u.base.range;
     }
     return u.base.range;
@@ -278,7 +282,7 @@ export class Game {
   }
 
   isTargetable(u) {
-    return u.alive && !u.protected;
+    return u.alive && !u.protected && !this.hasBuff(u, 'stealth') && !this.hasBuff(u, 'banish');
   }
 
   // ------------------------------------------------------------------ consultas
@@ -379,6 +383,11 @@ export class Game {
   // ------------------------------------------------------------------ daño
   dealDamage(src, tgt, amount, type = 'physical', o = {}) {
     if (!tgt.alive || tgt.protected) return 0;
+    if (this.hasBuff(tgt, 'banish')) return 0; // dentro de la caja de fuerza de Vrizahl
+    if (o.basic && tgt.kind === 'hero' && Math.random() < this.buffMax(tgt, 'dodge')) {
+      if (src?.isPlayer || tgt.isPlayer) this.floater(tgt, '¡Esquiva!', '#c8ffd8');
+      return 0;
+    }
     let a = amount;
     if (src && src.kind === 'hero' && src.isBot && src.team === 'red') a *= this.diff.dmg;
     if (src && src.kind === 'minion' && ['tower', 'nexus', 'boss'].includes(tgt.kind)) a *= 1.5;
@@ -625,12 +634,16 @@ export class Game {
       if (u.isPlayer) this.emit('message', { text: 'No tienes maná suficiente', kind: 'warn' });
       return false;
     }
-    const impl = ABILITY_IMPL[a.def.id];
+    // habilidades descritas con datos (kit.js) o programadas a mano (abilities.js)
+    const kit = a.def.kit;
+    const impl = kit ? (g, uu, r, pp, d) => KIT[kit.type](g, uu, r, pp, d, kit) : ABILITY_IMPL[a.def.id];
     if (!impl) return false;
     const p = point ? point.clone() : u.pos.clone();
     p.y = 0;
+    if (kit?.type !== 'stealth') this.removeBuff(u, 'kit_stealth'); // lanzar algo te revela
     const ok = impl(this, u, a.rank, p, a.def, targetUnit);
     if (ok === false) return false;
+    this.after(1.5, () => consumeAmp(this, u));
     u.mp -= cost;
     let cd = a.def.cd[a.rank - 1] * (1 - this.stat(u, 'cdr'));
     if (page) { cd *= 0.6; this.removeBuff(u, 'yes_page'); }
@@ -638,7 +651,7 @@ export class Game {
     a.maxCd = cd;
     PASSIVE_IMPL[u.heroId]?.onCast?.(this, u, i);
     this.castFlourish(u, i, a.def);
-    this.sound(`${u.heroId}_${a.def.key.toLowerCase()}`, u.pos);
+    this.sound([`${u.heroId}_${a.def.key.toLowerCase()}`, kit ? `kit_${kit.type}` : null].filter(Boolean), u.pos);
     if (i === 3) {
       this.voice(u, 'definitiva');
       if (this.player && u.team !== this.player.team) this.sound('aviso', null, 0.6);
@@ -727,6 +740,8 @@ export class Game {
     if (u.kind === 'hero') {
       const hook = PASSIVE_IMPL[u.heroId]?.onAttack?.(this, u, t, d);
       if (hook) { dmg *= hook.mult ?? 1; bonusMagic += hook.magic ?? 0; if (hook.color) color = hook.color; }
+      this.removeBuff(u, 'kit_stealth'); // atacar te revela
+      if (this.getBuff(u, 'kit_ranged')) { color = 0x4aff9a; size = 0.42; }
       const cc = this.stat(u, 'crit');
       if (cc > 0 && Math.random() < cc) { dmg *= 1.75; crit = true; }
       if (this.getBuff(u, 'kou_e')) this.removeBuff(u, 'kou_e');
@@ -771,7 +786,7 @@ export class Game {
     };
 
     const isStructure = ['tower', 'nexus', 'boss'].includes(u.kind);
-    const ranged = u.base.range > 4 || this.getBuff(u, 'jos_q') || (bonusMagic > 0 && d > 3);
+    const ranged = u.base.range > 4 || this.getBuff(u, 'jos_q') || this.getBuff(u, 'kit_ranged') || (bonusMagic > 0 && d > 3);
     if (u.kind === 'hero') {
       const ranged0 = u.base.range > 4;
       const snd = !ranged0 ? (u.heroId === 'fotsor' ? 'golpe_puno' : 'golpe_espada')
@@ -1267,6 +1282,9 @@ export class Game {
       }
       g.position.x = u.pos.x;
       g.position.z = u.pos.z;
+      const hidden = this.hasBuff(u, 'stealth') && this.player && u.team !== this.player.team;
+      g.visible = !hidden;
+      if (u.ringMesh) u.ringMesh.material.opacity = this.hasBuff(u, 'stealth') ? 0.35 : 1;
       if (u.kind === 'hero' || u.kind === 'minion' || u.kind === 'monster') {
         // girar suavemente
         let dr = u.facing - g.rotation.y;

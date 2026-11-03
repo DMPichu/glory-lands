@@ -1,6 +1,6 @@
 # Glory Lands: guía para Claude
 
-MOBA 3D en el navegador ambientado en la campaña de rol **Glory Lands** (Blood Hawks contra la Legión de Lorik). 7 contra 7, tres carriles, 10 héroes. JavaScript puro con módulos ES y **three.js 0.160** desde CDN: **no hay compilación** ni dependencias de ejecución.
+MOBA 3D en el navegador ambientado en la campaña de rol **Glory Lands** (Blood Hawks contra la Legión de Lorik). 7 contra 7, tres carriles, 27 héroes. JavaScript puro con módulos ES y **three.js 0.160** desde CDN: **no hay compilación** ni dependencias de ejecución.
 
 - Juego publicado: https://dmpichu.github.io/glory-lands/ (GitHub Pages desde `main`, raíz).
 - Qué falta conseguir para enriquecerlo: `REQUISITOS.md`.
@@ -30,7 +30,9 @@ python -m http.server 8770          # y abrir http://localhost:8770
 | `js/ai.js` | Bots (carril asignado, farmeo, peleas, retirada), súbditos (siguen su carril) y torres/Lorik. |
 | `js/map.js` | Geometría de los carriles: avance `s` de una unidad, punto del carril, siguiente punto. |
 | `js/models.js` | Modelos hechos con formas básicas, cargador de `.glb`, y el mundo (suelo pintado, río, bosque instanciado, faroles, partículas). |
-| `js/heroes.js` | Modelos de los 10 héroes (estilo anime, fieles a los tokens): figura base, caras pintadas en un lienzo, peinados, ropa y armas. |
+| `js/heroes.js` | Modelos de los héroes (estilo anime, fieles a los tokens): figura base, caras pintadas sobre la cabeza, peinados, ropa y armas. Los héroes sin modelo propio usan `buildFromLook` con su `look` de `roster.js`. |
+| `js/roster.js` | Los 17 héroes nuevos y el rework de Catarina, descritos con datos: estadísticas por rol, habilidades (tipo de `kit.js` + números), pasiva, compra y aspecto provisional (`look`). |
+| `js/kit.js` | Habilidades genéricas que ejecutan los datos de `roster.js` (skillshot, area, cone, dash, blink, buff, shield, heal, nova, stealth, execute, prison) y pasivas genéricas. |
 | `js/jungle.js` | Jungla: campamentos neutrales, monstruos épicos del río, su IA y sus bendiciones. |
 | `js/effects.js` | Partículas, anillos, pilares de luz, destellos, rayos. |
 | `js/ui.js`, `js/main.js` | Interfaz (HUD, paneles, minimapa, tienda) y arranque, controles, bucle, música. |
@@ -42,7 +44,8 @@ Detalles útiles:
 - Equipo azul a la izquierda (x negativa), rojo a la derecha; z negativa es el norte. Carriles `top`, `mid`, `bot` definidos en `LANES` (de la base azul a la roja).
 - El equipo rojo usa los mismos héroes con colores oscuros (`corrupt()` en `models.js`). **No** se les añade «corrompido» al nombre; si el mismo héroe está en los dos bandos, los mensajes dicen «(Legión)» (`game.label()`).
 - Cada habilidad devuelve `false` si no se pudo lanzar (no gasta maná). Los efectos visuales usan `g.fx.*`; los sonidos, `g.sound(nombre, posición)`.
-- Para añadir un héroe: entrada en `HEROES` y `HERO_ORDER` (config), 4 habilidades + pasiva en `abilities.js`, constructor de modelo en `HERO_BUILDERS` (models.js), iconos en `img/habilidades/`, y comprobarlo con la autoprueba.
+- Para añadir un héroe, lo más rápido es una entrada en `NEW` de `js/roster.js`: estadísticas por rol, 4 habilidades con su `kit` (tipo + números), pasiva con su `kit`, `build`, `prio` y `look`. Para habilidades especiales se puede programar una a mano en `abilities.js` (sin `kit`). Cuando llegue su token, se le hace un constructor propio en `HERO_BUILDERS_V2` (`js/heroes.js`). Comprueba siempre con la autoprueba.
+- Sonidos: `<héroe>_<q|w|e|r>.ogg` si existe; si no, el genérico del tipo (`kit_skillshot`, `kit_heal`...). Los efectos propios se generan con `python tools/sintetizar_sonidos.py`.
 
 ## Assets: dónde va cada cosa
 
