@@ -1,7 +1,7 @@
 // Núcleo del juego: unidades, combate, oleadas, estructuras y bucle principal.
 import * as THREE from 'three';
 import { HEROES, ITEMS, LAYOUT, MAP, CONST, MINIONS, STRUCTURES, TEAMS, HERO_ORDER, DIFFICULTY, LANES, LANE_NAMES, xpToNext } from './config.js';
-import { laneLength, lanePoint } from './map.js';
+import { laneLength, lanePoint, distToLanes } from './map.js';
 import { buildHeroModel, buildMinionModel, buildStructureModel, buildWorld, buildDragon, animateModel, corrupt } from './models.js';
 import { Effects } from './effects.js';
 import { ABILITY_IMPL, PASSIVE_IMPL } from './abilities.js';
@@ -231,7 +231,8 @@ export class Game {
     switch (k) {
       case 'as': return Math.min(2.5, u.base.as * (1 + g.as * L + this.itemStat(u, 'as') + this.buffSum(u, 'as')));
       case 'speed': {
-        const spd = (u.base.speed + this.itemStat(u, 'speed')) * (1 + this.buffSum(u, 'spd'));
+        const road = distToLanes(u.pos.x, u.pos.z) < MAP.laneHalf ? MAP.roadSpeed : 0;
+        const spd = (u.base.speed + this.itemStat(u, 'speed')) * (1 + this.buffSum(u, 'spd') + road);
         return spd * (1 - Math.min(0.7, this.buffMax(u, 'slow')));
       }
       case 'cdr': return Math.min(0.5, this.itemStat(u, 'cdr') + this.buffSum(u, 'cdr'));

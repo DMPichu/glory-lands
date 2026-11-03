@@ -217,7 +217,7 @@ function spawnCamp(g, camp) {
   camp.alive = true;
   if (camp.side === 'epic') {
     g.emit('message', { text: `¡${MONSTERS[camp.types[0]].name} ha aparecido en ${camp.where}!`, kind: 'warn' });
-    g.sound('aviso', null, 0.7);
+    g.sound('monstruo_epico', null, 0.8);
   }
   for (const u of camp.units) g.fx.burst(u.pos, camp.side === 'epic' ? 0xd0ff40 : 0xbff0ff, 14, 3, 0.14, 0.7, 2);
 }
@@ -358,7 +358,7 @@ export function giveBuff(g, h, id) {
     g.addBuff(h, 'bonus_mr', B.dur, 25, { key: 'jg_kugane_mr' });
     g.addBuff(h, 'spd', B.dur, 0.08, { key: 'jg_kugane_spd' });
   }
-  if (h.isPlayer) g.floater(h, `${B.icon} ${B.name}`, '#ffe08a', true);
+  if (h.isPlayer) { g.floater(h, `${B.icon} ${B.name}`, '#ffe08a', true); g.sound('bendicion', null, 0.7); }
   g.fx.ring(h.pos, 2.4, 0xffe08a, 0.8, { grow: true });
 }
 

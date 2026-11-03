@@ -16,7 +16,7 @@ Un mismo héroe puede estar en los dos equipos; el de la Legión lleva colores o
 | Acción | Tecla |
 |---|---|
 | Moverse / atacar | **Clic derecho** (mantenerlo pulsado sigue al cursor) |
-| Habilidades | **Q W E R** elige la habilidad y muestra su alcance; **clic izquierdo** donde quieras que golpee. Las que se lanzan sobre uno mismo salen al momento. **Clic derecho**, **Esc** o la misma tecla cancelan |
+| Habilidades | **Q W E R** lanzan la habilidad al momento hacia el cursor. Si quitas «Lanzamiento rápido» en el menú, la tecla muestra el alcance y el **clic izquierdo** elige dónde golpea (**clic derecho**, **Esc** o la misma tecla cancelan) |
 | Marcador | **Tab** (mantener) |
 | Volver a la base | **B** (6 s sin moverse ni recibir daño) |
 | Mejorar habilidad | **Mayús + Q/W/E/R** o el botón **+** |
