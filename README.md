@@ -18,6 +18,7 @@ Un mismo héroe puede estar en los dos equipos; el de la Legión lleva colores o
 | Moverse / atacar | Clic derecho (o izquierdo) |
 | Habilidades | **Q W E R**: mantén la tecla para ver el alcance y suéltala para lanzar hacia el cursor |
 | Marcador | **Tab** (mantener) |
+| Volver a la base | **B** (6 s sin moverse ni recibir daño) |
 | Mejorar habilidad | **Mayús + Q/W/E/R** o el botón **+** |
 | Tienda (en tu base o muerto) | **P** |
 | Beber poción | **1** |

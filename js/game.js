@@ -402,6 +402,7 @@ export class Game {
     tgt.shields = tgt.shields.filter((s) => s.amt > 0.5);
     const hpBefore = tgt.hp;
     tgt.hp -= left;
+    if (tgt.recall && src && left > 0) this.cancelRecall(tgt);
     if (tgt.hp <= 0 && this.getBuff(tgt, 'cri_r')) tgt.hp = 1; // Último aliento de Crixus
     if (src?.heroId === 'crixus' && this.getBuff(src, 'cri_r')) src.state.ultDmg = (src.state.ultDmg || 0) + left;
 
@@ -454,6 +455,7 @@ export class Game {
     u.buffs = [];
     u.shields = [];
     u.dash = null; u.knock = null; u.channel = null;
+    this.cancelRecall(u);
     u.order = null;
     if (u.kind === 'monster') { monsterKilled(this, u, killer); u.damagedBy.clear(); return; }
     const enemyTeam = this.enemiesOf(u.team);
@@ -608,6 +610,7 @@ export class Game {
     const a = u.abilities[i];
     if (!a || !u.alive || a.rank === 0 || a.cd > 0 || !this.canAct(u)) return false;
     if (this.hasBuff(u, 'taunt')) return false;
+    this.cancelRecall(u);
     const page = this.getBuff(u, 'yes_page');
     const cost = page ? 0 : a.def.cost[a.rank - 1];
     if (u.mp < cost) {
@@ -661,12 +664,44 @@ export class Game {
   orderMove(u, point) {
     if (!u.alive) return;
     if (this.hasBuff(u, 'taunt')) return;
+    this.cancelRecall(u);
     u.order = { type: 'move', point: point.clone() };
   }
   orderAttack(u, target) {
     if (!u.alive || !target) return;
     if (this.hasBuff(u, 'taunt')) return;
+    this.cancelRecall(u);
     u.order = { type: 'attack', target };
+  }
+
+  // Volver a la base: 6 s quieto; se cancela al moverse, atacar, lanzar o recibir daño
+  startRecall(u) {
+    if (!u.alive || u.recall || !this.canAct(u) || this.nearFountain(u, u.team, CONST.fountainRadius)) return false;
+    u.order = null;
+    u.recall = { t: 6, max: 6, ring: this.fx.ring(u.pos, 1.6, 0x8fd0ff, 6, { follow: u, steady: true, opacity: 0.8 }) };
+    if (u.isPlayer) this.emit('message', { text: 'Volviendo a Zugri… (no te muevas)', kind: 'info' });
+    return true;
+  }
+
+  cancelRecall(u) {
+    if (!u.recall) return;
+    if (u.recall.ring) u.recall.ring.life = 0.01;
+    u.recall = null;
+    if (u.isPlayer) this.emit('message', { text: 'Regreso a la base cancelado', kind: 'warn' });
+  }
+
+  updateRecall(u, dt) {
+    const r = u.recall;
+    r.t -= dt;
+    if (Math.random() < 0.6) this.fx.spark(new THREE.Vector3(u.pos.x + (Math.random() - 0.5) * 2, 0.2, u.pos.z + (Math.random() - 0.5) * 2), 0x8fd0ff, 0.12, 0.9, 3);
+    if (r.t > 0) return;
+    u.recall = null;
+    this.fx.burst(u.pos, 0x8fd0ff, 24, 3, 0.15, 0.7, 3);
+    const sp = this.spawnPoint(u.team, u.slot ?? 0);
+    u.pos.set(sp.x, 0, sp.z);
+    u.order = null;
+    this.fx.ring(u.pos, 2.5, 0x8fd0ff, 0.8, { grow: true });
+    if (u.isPlayer) this.sound('reaparecer', null, 0.7);
   }
 
   // ------------------------------------------------------------------ ataques básicos
@@ -900,6 +935,7 @@ export class Game {
   // ------------------------------------------------------------------ actualización de unidades
   updateUnit(u, dt) {
     u.moving = false;
+    if (u.recall) this.updateRecall(u, dt);
     if (u.attackCd > 0) u.attackCd -= dt;
     if (u.attackAnim > 0) { u.attackAnim += dt * 4; if (u.attackAnim > 1) u.attackAnim = 0; }
 

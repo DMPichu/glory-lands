@@ -200,7 +200,8 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (k === 'tab') { e.preventDefault(); ui.showScoreboard(true); return; }
-  if (k === 'p' || k === 'b') ui.toggleShop();
+  if (k === 'p') ui.toggleShop();
+  else if (k === 'b') game.startRecall(game.player);
   else if (k === '1') game.usePotion(game.player);
   else if (k === 's') game.player.order = null;
 });

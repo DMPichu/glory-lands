@@ -32,6 +32,8 @@ export class UI {
       else if (killer === p) this.message(`¡Has derrotado a ${L(victim)}!`, 'good');
       else this.message(`${L(killer) || 'Una torre'} ha derrotado a ${L(victim)}`, victim.team === p.team ? 'danger' : 'good');
     });
+    game.on('heroKilled', (e) => this.announceKill(e));
+    game.on('epicKilled', ({ monster, team }) => this.banner(`¡${monster.name} derrotado!`, team === this.g.player.team ? 'good' : 'danger', team === this.g.player.team ? 'Bendición para todo el equipo' : 'La Legión recibe su bendición'));
     game.on('towerDestroyed', ({ tower }) => {
       const ours = tower.team === this.g.player.team;
       this.message(ours ? `¡Han destruido nuestra ${tower.name}!` : `¡${tower.name} destruido!`, ours ? 'danger' : 'good');
@@ -321,6 +323,14 @@ export class UI {
         if (g.hasBuff(u, 'weak')) st.push('💔');
         if (u.channel) st.push('🎯…');
         if (st.length) { c.font = '13px system-ui'; c.fillText(st.join(' '), s.x, y + 28); }
+        if (u.recall) {
+          // barra de regreso a la base
+          const k = 1 - u.recall.t / u.recall.max;
+          c.fillStyle = 'rgba(10,10,18,0.85)'; c.fillRect(x - 1, y + 33, bw + 2, 7);
+          c.fillStyle = '#8fd0ff'; c.fillRect(x, y + 34, bw * k, 5);
+          c.font = '600 10px system-ui, sans-serif'; c.fillStyle = '#d8ecff';
+          c.fillText('Volviendo a Zugri', s.x, y + 50);
+        }
       } else if (u.kind === 'monster') {
         // monstruos neutrales: barra ámbar; los grandes y los épicos, con nombre
         const big = u.epic || u.base.buff;
@@ -412,6 +422,35 @@ export class UI {
       c.fillStyle = col; c.beginPath(); c.arc(sx(f.x), sz(f.z), 8, 0, 7); c.fill();
     }
     return cv;
+  }
+
+  // Anuncios grandes: primera sangre, rachas y asesinatos múltiples
+  announceKill({ victim, killer }) {
+    const g = this.g;
+    const st = (g.killStats ||= { first: false });
+    if (victim) { victim.streak = 0; }
+    if (!killer || killer.kind !== 'hero') return;
+    killer.streak = (killer.streak || 0) + 1;
+    killer.multi = g.time - (killer.lastKillT ?? -99) < 10 ? (killer.multi || 1) + 1 : 1;
+    killer.lastKillT = g.time;
+    const mine = killer.team === g.player.team;
+    const who = killer.isPlayer ? '¡Tú!' : g.label(killer);
+    const kind = mine ? 'good' : 'danger';
+    const MULTI = { 2: '¡Doble derrota!', 3: '¡Triple derrota!', 4: '¡Cuádruple derrota!', 5: '¡MASACRE EN GLORY LANDS!' };
+    const STREAK = { 3: 'está imparable', 5: 'es una leyenda de Zugri', 7: 'es divino' };
+    if (!st.first) { st.first = true; this.banner('¡Primera sangre!', kind, who); return; }
+    if (killer.multi >= 2) { this.banner(MULTI[Math.min(5, killer.multi)], kind, who); return; }
+    if (STREAK[killer.streak]) this.banner(`${who} ${STREAK[killer.streak]}`, kind, `${killer.streak} derrotas seguidas`);
+  }
+
+  banner(text, kind = 'good', sub = '') {
+    const el = $('banner');
+    if (!el) return;
+    el.className = 'show ' + kind;
+    el.innerHTML = `<div class="bt">${text}</div>${sub ? `<div class="bs">${sub}</div>` : ''}`;
+    clearTimeout(this.bannerT);
+    this.bannerT = setTimeout(() => { el.className = kind; }, 2600);
+    this.g.sound('aviso', null, 0.5);
   }
 
   // Marcador (tecla Tab): los 14 héroes con nivel, K/M/A, súbditos y objetos

@@ -46,6 +46,10 @@ export function heroAI(g, u, dt) {
     if (nearEnemy && dist2(nearEnemy.pos, u.pos) < 6) {
       useAbilities(g, u, { retreat: true, enemy: nearEnemy });
     }
+    if (u.recall) return;
+    const far = dist2(u.pos, V(fountain.x, fountain.z)) > 45;
+    const safe = !g.heroes.some((h) => h.alive && h.team === enemyTeam && dist2(h.pos, u.pos) < 16);
+    if (far && safe && g.startRecall(u)) return;
     g.orderMove(u, V(fountain.x, fountain.z));
     return;
   }
