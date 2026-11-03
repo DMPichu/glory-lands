@@ -1,13 +1,15 @@
 # Glory Lands: La Batalla de Zugri
 
-Prototipo de juego 3D estilo MOBA ambientado en **Glory Lands**. Los **Blood Hawks** se enfrentan a la **Legión de Lorik** en un mapa de una sola línea. Funciona en el navegador y no hace falta instalar nada.
+Prototipo de juego 3D estilo MOBA ambientado en **Glory Lands**. Los **Blood Hawks** se enfrentan a la **Legión de Lorik** en un mapa de **tres carriles**, **7 contra 7**. Funciona en el navegador y no hace falta instalar nada.
 
 ## Cómo se juega
 
-1. Elige a un héroe: **Josephine**, **Fotsor**, **Yeslie Moonbloom** o **Astrid**.
-2. Elige el modo (**1 contra 1**, o **2 contra 2** con un aliado bot) y la dificultad.
-3. Destruye los dos **obeliscos** de la Legión y derrota a **Lorik** en su santuario.
+1. Elige a uno de los **10 héroes**: Josephine, Fotsor, Yeslie Moonbloom, Astrid, Kouji Kitaeda, Grimdarkus II, Ikaruus Rukhu, Crixus, Legna o Catarina Fersen.
+2. Elige el modo (**7 contra 7**, o **1 contra 1** para practicar) y la dificultad. Los otros 13 héroes son bots.
+3. Hay tres carriles (norte, central y sur) con dos obeliscos cada uno. Derriba los dos de **cualquier** carril para dejar expuesto a **Lorik** y derrótalo en su santuario.
 4. Si cae la **Torre de Zugri** (tu base), pierdes.
+
+Un mismo héroe puede estar en los dos equipos; el de la Legión lleva colores oscuros (y, en los mensajes, la etiqueta «(Legión)»).
 
 ### Controles
 
@@ -20,25 +22,28 @@ Prototipo de juego 3D estilo MOBA ambientado en **Glory Lands**. Los **Blood Haw
 | Beber poción | **1** |
 | Detenerse | **S** |
 | Zoom | Rueda del ratón |
+| Ir a un punto del mapa | Clic en el minimapa |
 | Pausa | **Esc** |
 
 ### Reglas básicas
 
-- Cada 28 s salen oleadas de súbditos de cada base: guardias de la Orden contra cultistas y ángeles corrompidos.
+- Cada 30 s salen oleadas de súbditos por los tres carriles: guardias de la Orden contra cultistas y ángeles corrompidos.
+- El mapa tiene un río con tres puentes, bosques (las arboledas no se pueden atravesar) y cuatro lugares especiales: las ruinas de Eaglere, el Árbol de Astora, el altar de la Legión y la aguja de cristal corrompido.
+- Cerca de tu base corres un 60 % más rápido, para que volver al carril no se haga largo.
 - Rematar súbditos da oro. Con el oro compras objetos en la tienda.
 - La tienda tiene 19 objetos en cinco categorías. Algunos dan efectos especiales: robo de vida, golpes críticos, penetración de armadura o de resistencia mágica, daño extra al golpear, espinas y curaciones más fuertes.
 - Si el juego va lento, desactiva **Efectos de brillo** en el menú (o abre la página con `?bloom=0`).
 - Las torres atacan a quien entre en su alcance. Si atacas a un héroe bajo su torre, la torre te atacará a ti.
-- La torre interior no se puede dañar mientras la exterior siga en pie, y la base, mientras quede alguna torre.
-- Cuando un equipo pierde sus dos torres, el rival recibe **súbditos de asedio** (más grandes y fuertes).
+- La torre interior de un carril no se puede dañar mientras la exterior siga en pie. La base queda expuesta en cuanto un carril se queda sin torres.
+- En un carril sin torres enemigas salen **súbditos de asedio** (más grandes y fuertes).
 - Lorik se defiende: enraíza a los héroes cercanos y, sin torres que lo protejan, invoca ángeles corrompidos.
 
 ## Cómo abrirlo
 
 El juego usa módulos de JavaScript, así que **no funciona abriendo `index.html` con doble clic**: necesita un servidor web.
 
-- **Con GitHub Pages:** activa Pages en el repositorio y abre `https://<usuario>.github.io/<repo>/game/`.
-- **En tu PC:** desde la carpeta `game`, ejecuta `python -m http.server 8765` y abre `http://localhost:8765` (cualquier puerto libre sirve).
+- **En línea:** https://dmpichu.github.io/glory-lands/
+- **En tu PC:** desde la carpeta del juego, ejecuta `python -m http.server 8765` y abre `http://localhost:8765` (cualquier puerto libre sirve).
 
 ## Estructura del código
 
@@ -49,7 +54,8 @@ El juego usa módulos de JavaScript, así que **no funciona abriendo `index.html
 | `js/abilities.js` | Qué hace cada habilidad (Q/W/E/R) y cada pasiva. |
 | `js/ai.js` | Inteligencia de los bots, los súbditos, las torres y Lorik. |
 | `js/game.js` | Motor: combate, movimiento, oleadas, muerte y recompensas. |
-| `js/models.js` | Modelos 3D hechos con formas básicas y el mapa. |
+| `js/map.js` | Geometría de los carriles (avance de cada unidad por su carril). |
+| `js/models.js` | Modelos 3D hechos con formas básicas y el mapa (vegetación, río, puentes, faroles, partículas). |
 | `js/effects.js` | Partículas, anillos, rayos y proyectiles. |
 | `js/ui.js`, `js/main.js` | Interfaz, controles y bucle principal. |
 

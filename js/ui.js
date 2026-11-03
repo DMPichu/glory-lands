@@ -1,6 +1,7 @@
 // Interfaz: HUD, barras de vida, textos flotantes, minimapa y tienda.
 import * as THREE from 'three';
-import { HEROES, ITEMS, SHOP_ORDER, LAYOUT, CONST, xpToNext } from './config.js';
+import { HEROES, ITEMS, SHOP_ORDER, LAYOUT, CONST, MAP, LANES, xpToNext } from './config.js';
+import { riverX } from './models.js';
 
 const $ = (id) => document.getElementById(id);
 const V = new THREE.Vector3();
@@ -24,14 +25,18 @@ export class UI {
     });
     game.on('heroKilled', ({ victim, killer }) => {
       const p = this.g.player;
-      if (victim === p) this.message(`Has caído ante ${killer?.name || 'las fuerzas enemigas'}`, 'danger');
-      else if (killer === p) this.message(`¡Has derrotado a ${victim.name}!`, 'good');
-      else this.message(`${killer?.name || 'Una torre'} ha derrotado a ${victim.name}`, victim.team === p.team ? 'danger' : 'good');
+      const L = (u) => this.g.label(u);
+      if (victim === p) this.message(`Has caído ante ${L(killer) || 'las fuerzas enemigas'}`, 'danger');
+      else if (killer === p) this.message(`¡Has derrotado a ${L(victim)}!`, 'good');
+      else this.message(`${L(killer) || 'Una torre'} ha derrotado a ${L(victim)}`, victim.team === p.team ? 'danger' : 'good');
     });
     game.on('towerDestroyed', ({ tower }) => {
       const ours = tower.team === this.g.player.team;
       this.message(ours ? `¡Han destruido nuestra ${tower.name}!` : `¡${tower.name} destruido!`, ours ? 'danger' : 'good');
-      if (!ours && tower.tier === 2) this.message('¡Lorik ya es vulnerable! Ve a por él.', 'good');
+    });
+    game.on('coreExposed', ({ core }) => {
+      if (core.team === this.g.player.team) this.message('¡La Torre de Zugri ha quedado expuesta! ¡Defiéndela!', 'danger');
+      else this.message('¡Lorik ya es vulnerable! Ve a por él.', 'good');
     });
   }
 
@@ -85,10 +90,11 @@ export class UI {
       });
       el.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
     });
-    // panel de equipos
-    const tp = $('teams');
-    tp.innerHTML = '';
+    // paneles de equipos: aliados a la izquierda, enemigos a la derecha
+    $('teams').innerHTML = '';
+    $('teamsRed').innerHTML = '';
     this.teamEls = this.g.heroes.map((h) => {
+      const tp = $(h.team === 'blue' ? 'teams' : 'teamsRed');
       const el = document.createElement('div');
       el.className = 'tmember ' + h.team + (h.isPlayer ? ' me' : '');
       el.innerHTML = `<div class="tport" style="background:radial-gradient(circle at 35% 30%, ${h.def.color}, #1a1626 80%)">${h.def.name[0]}<span class="tlvl"></span><span class="tdead"></span></div>
@@ -353,19 +359,42 @@ export class UI {
     }
   }
 
+  // Coordenadas del minimapa <-> mundo (también las usa el clic sobre el minimapa)
+  miniToWorld(px, py) {
+    const W = this.mini.width, H = this.mini.height;
+    return { x: MAP.minX + (px / W) * (MAP.maxX - MAP.minX), z: MAP.minZ + (py / H) * (MAP.maxZ - MAP.minZ) };
+  }
+
+  // El fondo (hierba, río, carriles) solo se pinta una vez
+  miniBackground() {
+    const W = this.mini.width, H = this.mini.height;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const c = cv.getContext('2d');
+    const sx = (x) => ((x - MAP.minX) / (MAP.maxX - MAP.minX)) * W;
+    const sz = (z) => ((z - MAP.minZ) / (MAP.maxZ - MAP.minZ)) * H;
+    const grd = c.createLinearGradient(0, 0, W, 0);
+    grd.addColorStop(0, '#2e5a2a'); grd.addColorStop(0.5, '#4a5a3a'); grd.addColorStop(0.62, '#3a3240'); grd.addColorStop(1, '#2a2230');
+    c.fillStyle = grd; c.fillRect(0, 0, W, H);
+    for (const o of this.g.obstacles) { c.fillStyle = o.x < 20 ? 'rgba(20,50,20,0.8)' : 'rgba(30,18,34,0.8)'; c.beginPath(); c.arc(sx(o.x), sz(o.z), Math.max(2, (o.r / (MAP.maxX - MAP.minX)) * W), 0, 7); c.fill(); }
+    c.strokeStyle = 'rgba(70,150,210,0.9)'; c.lineWidth = 4; c.beginPath();
+    for (let z = MAP.minZ; z <= MAP.maxZ; z += 4) (z === MAP.minZ ? c.moveTo : c.lineTo).call(c, sx(riverX(z)), sz(z));
+    c.stroke();
+    c.strokeStyle = 'rgba(200,175,125,0.75)'; c.lineWidth = 5; c.lineJoin = 'round';
+    for (const pts of Object.values(LANES)) { c.beginPath(); pts.forEach(([x, z], i) => (i ? c.lineTo(sx(x), sz(z)) : c.moveTo(sx(x), sz(z)))); c.stroke(); }
+    for (const [team, col] of [['blue', 'rgba(80,160,255,0.55)'], ['red', 'rgba(255,60,90,0.55)']]) {
+      const f = LAYOUT[team].fountain;
+      c.fillStyle = col; c.beginPath(); c.arc(sx(f.x), sz(f.z), 8, 0, 7); c.fill();
+    }
+    return cv;
+  }
+
   drawMinimap() {
     const g = this.g, c = this.mctx;
     const W = this.mini.width, H = this.mini.height;
-    const sx = (x) => ((x + 104) / 208) * W;
-    const sz = (z) => ((z + 26) / 52) * H;
-    const grd = c.createLinearGradient(0, 0, W, 0);
-    grd.addColorStop(0, '#2e4a2a'); grd.addColorStop(0.55, '#4a4636'); grd.addColorStop(1, '#2a2230');
-    c.fillStyle = grd; c.fillRect(0, 0, W, H);
-    c.fillStyle = 'rgba(190,160,110,0.55)';
-    c.fillRect(0, sz(-11), W, sz(11) - sz(-11));
-    // fuentes
-    c.fillStyle = 'rgba(80,160,255,0.6)'; c.beginPath(); c.arc(sx(LAYOUT.blue.fountain), sz(0), 9, 0, 7); c.fill();
-    c.fillStyle = 'rgba(255,60,90,0.6)'; c.beginPath(); c.arc(sx(LAYOUT.red.fountain), sz(0), 9, 0, 7); c.fill();
+    const sx = (x) => ((x - MAP.minX) / (MAP.maxX - MAP.minX)) * W;
+    const sz = (z) => ((z - MAP.minZ) / (MAP.maxZ - MAP.minZ)) * H;
+    this.miniBg ||= this.miniBackground();
+    c.drawImage(this.miniBg, 0, 0);
     for (const u of g.units) {
       if (!u.alive && u.kind !== 'tower') continue;
       const col = u.team === 'blue' ? '#4aa3ff' : '#ff4a5a';
@@ -389,7 +418,8 @@ export class UI {
     const p = g.camPos;
     if (p) {
       c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 1;
-      c.strokeRect(sx(p.x - 22 * g.camZoom), sz(p.z - 20 * g.camZoom - 14 * g.camZoom), sx(44 * g.camZoom) - sx(0), sz(28 * g.camZoom) - sz(0));
+      const z = g.camZoom;
+      c.strokeRect(sx(p.x - 22 * z), sz(p.z - 34 * z), sx(44 * z) - sx(0), sz(28 * z) - sz(0));
     }
   }
 }

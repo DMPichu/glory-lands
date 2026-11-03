@@ -64,12 +64,14 @@ button { font-family: inherit; cursor: pointer; }
 #timer { font-family: Cinzel, serif; font-weight: 800; color: var(--gold); font-size: 16px; }
 .sb.blue { color: var(--blue); } .sb.red { color: var(--red); }
 .sb b { color: #fff; font-size: 16px; }
-#teams { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
-.tmember { display: flex; gap: 8px; align-items: center; padding: 5px 8px 5px 5px; border-radius: 10px; background: var(--panel); border-left: 3px solid var(--blue); width: 190px; }
+#teams, #teamsRed { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+#teamsRed { left: auto; right: 8px; }
+#teamsRed .tmember { flex-direction: row-reverse; text-align: right; border-left: none; border-right: 3px solid var(--red); padding: 3px 3px 3px 8px; }
+.tmember { display: flex; gap: 7px; align-items: center; padding: 3px 8px 3px 3px; border-radius: 9px; background: var(--panel); border-left: 3px solid var(--blue); width: 168px; }
 .tmember.red { border-left-color: var(--red); }
 .tmember.me { border-left-color: #5dff7a; }
 .tmember.dead { opacity: 0.55; }
-.tport { position: relative; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-family: Cinzel, serif; font-weight: 800; color: #fff; flex: none; }
+.tport { position: relative; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: Cinzel, serif; font-weight: 800; color: #fff; flex: none; }
 .tlvl { position: absolute; bottom: -3px; right: -4px; font-size: 10px; background: #000; border-radius: 6px; padding: 0 4px; font-family: Inter, sans-serif; }
 .tdead { position: absolute; inset: 0; display: grid; place-items: center; font-size: 15px; color: #fff; font-family: Inter, sans-serif; text-shadow: 0 0 4px #000; }
 .tinfo { flex: 1; min-width: 0; }
@@ -136,7 +138,7 @@ button { font-family: inherit; cursor: pointer; }
 #shopBtn { width: 100%; margin-top: 4px; padding: 5px; border-radius: 7px; border: 1px solid var(--line); background: #2a2238; color: var(--gold); font-weight: 700; font-size: 12px; }
 #shopBtn.glow { animation: pulse 0.9s infinite alternate; }
 #kda { font-size: 10.5px; color: var(--dim); margin-top: 4px; text-align: center; }
-#minimap { border-radius: 8px; border: 1px solid var(--line); width: 260px; height: 80px; }
+#minimap { border-radius: 8px; border: 1px solid var(--line); width: 240px; height: 141px; cursor: pointer; }
 
 #shop { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -58%); width: min(520px, calc(100vw - 32px)); max-height: 70vh; display: none; flex-direction: column; background: rgba(16, 14, 26, 0.97); border: 1px solid var(--gold); border-radius: 14px; padding: 12px; }
 .shopHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-family: Cinzel, serif; color: var(--gold); margin-bottom: 8px; }
@@ -174,6 +176,7 @@ body:has(#deadScreen[style*="flex"]) #view { filter: grayscale(0.85) brightness(
 @media (max-width: 1100px) {
   #minimap { display: none; }
   #teams { transform: scale(0.85); transform-origin: top left; }
+  #teamsRed { transform: scale(0.85); transform-origin: top right; }
 }
 @media (max-width: 760px) {
   #bottom { transform: translateX(-50%) scale(0.75); transform-origin: bottom center; }

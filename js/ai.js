@@ -2,13 +2,14 @@
 import * as THREE from 'three';
 import { HEROES, ITEMS, LAYOUT, TEAMS, CONST } from './config.js';
 import { dist2 } from './game.js';
+import { laneProject, lanePoint, laneLength, nextWaypoint } from './map.js';
 
 const V = (x, z) => new THREE.Vector3(x, 0, z);
 const STRUCT = ['tower', 'nexus', 'boss'];
 
 // ------------------------------------------------------------------ HÉROES
 export function heroAI(g, u, dt) {
-  const ai = (u.ai ||= { think: Math.random() * 0.2, mode: 'lane', zOff: (Math.random() - 0.5) * 6, cast: 0 });
+  const ai = (u.ai ||= { think: Math.random() * 0.2, mode: 'lane', ox: (Math.random() - 0.5) * 5, oz: (Math.random() - 0.5) * 5, cast: 0 });
   if (u.channel || u.dash) return;
   ai.think -= dt;
   if (ai.think > 0) return;
@@ -16,9 +17,12 @@ export function heroAI(g, u, dt) {
 
   const enemyTeam = g.enemiesOf(u.team);
   const dir = TEAMS[u.team].dir;
-  const fountainX = LAYOUT[u.team].fountain;
+  const fountain = LAYOUT[u.team].fountain;
   const hpR = u.hp / u.maxHp;
-  const inFountain = Math.abs(u.pos.x - fountainX) < CONST.fountainRadius - 1;
+  const inFountain = g.nearFountain(u, u.team, CONST.fountainRadius - 1);
+  const lane = u.lane || 'mid';
+  // punto del carril a «s» metros de la base azul, con un pequeño desplazamiento propio
+  const laneSpot = (sv) => { const q = lanePoint(lane, sv); return V(q.x + ai.ox, q.z + ai.oz); };
 
   // compras
   if (g.inShop(u)) botShop(g, u);
@@ -42,7 +46,7 @@ export function heroAI(g, u, dt) {
     if (nearEnemy && dist2(nearEnemy.pos, u.pos) < 6) {
       useAbilities(g, u, { retreat: true, enemy: nearEnemy });
     }
-    g.orderMove(u, V(fountainX, 0));
+    g.orderMove(u, V(fountain.x, fountain.z));
     return;
   }
 
@@ -71,7 +75,7 @@ export function heroAI(g, u, dt) {
   for (const s of g.units) {
     if (!s.alive || s.team !== enemyTeam || !STRUCT.includes(s.kind)) continue;
     if (s.order?.target === u && dist2(s.pos, u.pos) < s.base.range + 2) {
-      g.orderMove(u, V(s.pos.x - dir * (s.base.range + 4), u.pos.z));
+      g.orderMove(u, laneSpot(laneProject(lane, s.pos.x, s.pos.z).s - dir * (s.base.range + 4)));
       return;
     }
   }
@@ -98,28 +102,32 @@ export function heroAI(g, u, dt) {
     if (tanks.length >= 1 && !towerOnMe) { g.orderAttack(u, s); return; }
   }
 
-  // --- posicionarse detrás de la oleada aliada
-  const own = g.units.filter((m) => m.alive && m.kind === 'minion' && m.team === u.team);
-  let frontX;
+  // --- posicionarse detrás de la oleada aliada de su carril
+  const own = g.units.filter((m) => m.alive && m.kind === 'minion' && m.team === u.team && m.lane === lane);
+  const progress = (o) => laneProject(lane, o.pos.x, o.pos.z).s;
+  let sTarget;
   if (own.length) {
-    frontX = dir > 0 ? Math.max(...own.map((m) => m.pos.x)) : Math.min(...own.map((m) => m.pos.x));
-    frontX -= dir * (u.def.melee ? 2 : 4);
+    const ss = own.map(progress);
+    sTarget = (dir > 0 ? Math.max(...ss) : Math.min(...ss)) - dir * (u.def.melee ? 2 : 4);
   } else {
-    // esperar junto a la torre aliada más avanzada
-    const towers = g.units.filter((s) => s.alive && s.team === u.team && STRUCT.includes(s.kind));
-    if (!towers.length) return;
-    const t = towers.reduce((a, b) => (dir > 0 ? (a.pos.x > b.pos.x ? a : b) : (a.pos.x < b.pos.x ? a : b)));
-    frontX = t.pos.x + dir * 3;
+    // esperar junto a la torre aliada más avanzada del carril (o delante del núcleo)
+    const towers = g.units.filter((s) => s.alive && s.team === u.team && s.kind === 'tower' && s.lane === lane);
+    if (towers.length) {
+      const ss = towers.map(progress);
+      sTarget = (dir > 0 ? Math.max(...ss) : Math.min(...ss)) + dir * 3;
+    } else sTarget = dir > 0 ? 8 : laneLength(lane) - 8;
   }
-  const target = V(frontX, ai.zOff);
-  // no meterse bajo torre enemiga
-  if (!towerSafe(g, u, target)) {
+  // no meterse bajo una torre enemiga sin súbditos que la tanqueen
+  for (let k = 0; k < 3; k++) {
+    const target = laneSpot(sTarget);
+    if (towerSafe(g, u, target)) break;
     for (const s of g.units) {
       if (!s.alive || s.team !== enemyTeam || !STRUCT.includes(s.kind)) continue;
-      if (dist2(s.pos, target) < s.base.range + 2) target.x = s.pos.x - dir * (s.base.range + 2.5);
+      if (dist2(s.pos, target) < s.base.range + 2) sTarget = progress(s) - dir * (s.base.range + 2.5);
     }
   }
-  if (dist2(target, u.pos) > 1.2) g.orderMove(u, target);
+  const target = laneSpot(sTarget);
+  if (dist2(target, u.pos) > 1.5) g.orderMove(u, target);
 }
 
 // ¿Es seguro estar en esta posición respecto a las estructuras enemigas?
@@ -155,8 +163,10 @@ function useAbilities(g, u, ctx) {
   const hpR = u.hp / u.maxHp;
   const mpR = u.mp / Math.max(1, u.maxMp);
   const fight = !!ctx.fight;
-  const fountain = V(LAYOUT[u.team].fountain, 0);
+  const fountain = V(LAYOUT[u.team].fountain.x, LAYOUT[u.team].fountain.z);
   const lead = e ? predict(e, dE / 26) : null;
+  const allyHeroes = g.alliesInRadius(u.team, u.pos, 14, ['hero']);
+  const away = e ? V(u.pos.x - (e.pos.x - u.pos.x), u.pos.z - (e.pos.z - u.pos.z)) : fountain;
 
   for (let i = 0; i < 4; i++) {
     if (!canUse(g, u, i)) continue;
@@ -219,8 +229,35 @@ function useAbilities(g, u, ctx) {
         break;
       case 'escape':
         if (ctx.retreat && dE < 6) cast(fountain);
-        else if (u.heroId === 'astrid' && fight && dE < 2.5 && hpR < 0.5) cast(V(u.pos.x - (e.pos.x - u.pos.x), u.pos.z - (e.pos.z - u.pos.z)));
+        else if (fight && dE < 3 && hpR < 0.5 && !u.def.melee) cast(away);
         else if (u.heroId === 'yeslie' && (g.hasBuff(u, 'stun') || g.hasBuff(u, 'root')) && e) cast(fountain);
+        break;
+      case 'healZone': {
+        const hurt = allyHeroes.filter((h) => h.hp / h.maxHp < 0.6);
+        if (hurt.length && (fight || hurt.length >= 2)) cast(centroid(hurt));
+        break;
+      }
+      case 'shieldAlly': {
+        const near = g.alliesInRadius(u.team, u.pos, def.range, ['hero']);
+        const low = near.reduce((a, b) => (a.hp / a.maxHp < b.hp / b.maxHp ? a : b), u);
+        if (low.hp / low.maxHp < 0.6 || (fight && low.hp / low.maxHp < 0.85)) cast(low.pos);
+        break;
+      }
+      case 'ultHealAll': {
+        const low = allyHeroes.filter((h) => h.hp / h.maxHp < 0.4).length;
+        if (e && (low >= 2 || (low >= 1 && fight))) cast(u.pos);
+        break;
+      }
+      case 'ultDome': {
+        const foes = g.enemiesInRadius(u.team, u.pos, def.radius - 1, ['hero']).length;
+        if (fight && foes >= 1 && (foes >= 2 || eR < 0.5)) cast(u.pos);
+        break;
+      }
+      case 'ultLow':
+        if (fight && hpR < 0.35 && dE < 5) cast(u.pos);
+        break;
+      case 'lineUlt':
+        if (e && !ctx.retreat && dE < def.range * 0.8 && (eR < 0.55 || fight)) cast(lead);
         break;
       case 'ultSelf':
         if (fight && dE < 8) cast(u.pos);
@@ -291,8 +328,12 @@ export function minionAI(g, u, dt) {
     u.order = { type: 'attack', target };
     return;
   }
-  const goalX = LAYOUT[enemyTeam].nexus;
-  u.order = { type: 'move', point: V(goalX, u.pos.z * 0.9) };
+  // seguir el camino de su carril hacia la base enemiga
+  const dir = TEAMS[u.team].dir;
+  const lane = u.lane || 'mid';
+  const wp = nextWaypoint(lane, laneProject(lane, u.pos.x, u.pos.z).s, dir);
+  const goal = wp ?? LAYOUT[enemyTeam].nexus;
+  u.order = { type: 'move', point: V(goal.x, goal.z) };
 }
 
 // ------------------------------------------------------------------ ESTRUCTURAS

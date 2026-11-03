@@ -19,7 +19,7 @@ let game = null;
 let ui = null;
 let last = 0;
 let selected = params.get('hero') && HEROES[params.get('hero')] ? params.get('hero') : 'josephine';
-let mode = params.get('mode') === '2v2' ? '2v2' : '1v1';
+let mode = params.get('mode') === '1v1' ? '1v1' : '7v7';
 let difficulty = ['facil', 'normal', 'dificil'].includes(params.get('diff')) ? params.get('diff') : 'normal';
 const speed = Math.max(1, Math.min(20, Number(params.get('speed')) || 1));
 
@@ -160,6 +160,15 @@ view.addEventListener('mousedown', (e) => {
   }
 });
 window.addEventListener('mouseup', () => { mouse.held = false; });
+// clic en el minimapa: ir a ese punto del mapa
+$('minimap').addEventListener('mousedown', (e) => {
+  if (!game || game.paused || !game.player.alive) return;
+  e.stopPropagation();
+  const r = e.currentTarget.getBoundingClientRect();
+  const w = ui.miniToWorld(((e.clientX - r.left) / r.width) * e.currentTarget.width, ((e.clientY - r.top) / r.height) * e.currentTarget.height);
+  game.orderMove(game.player, new THREE.Vector3(w.x, 0, w.z));
+  game.fx.ring(new THREE.Vector3(w.x, 0, w.z), 1.2, 0x6dff8a, 0.6, { grow: true });
+});
 window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
 window.addEventListener('contextmenu', (e) => e.preventDefault());
 view.addEventListener('wheel', (e) => {

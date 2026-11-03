@@ -1,16 +1,38 @@
 // Datos del juego: mapa, héroes, objetos y constantes.
 // Todo lo que se quiera equilibrar (daño, vida, enfriamientos...) está aquí.
 
+// Mapa de tres carriles. El equipo azul (Blood Hawks) está a la izquierda (x negativa)
+// y el rojo (Legión de Lorik) a la derecha. z negativa es el norte (arriba en pantalla).
 export const MAP = {
-  minX: -100,
-  maxX: 100,
-  laneHalf: 11, // medio ancho del carril caminable (eje Z)
+  minX: -150,
+  maxX: 150,
+  minZ: -88,
+  maxZ: 88,
+  laneHalf: 6, // medio ancho del camino pintado de cada carril
 };
 
-// Distribución de estructuras. El equipo azul (Blood Hawks) está a la izquierda (x negativa).
+// Recorrido de cada carril, de la base azul a la roja.
+export const LANES = {
+  top: [[-114, -6], [-108, -56], [-92, -72], [92, -72], [108, -56], [114, -6]],
+  mid: [[-114, 0], [114, 0]],
+  bot: [[-114, 6], [-108, 56], [-92, 72], [92, 72], [108, 56], [114, 6]],
+};
+export const LANE_NAMES = { top: 'norte', mid: 'central', bot: 'sur' };
+
+// Distribución de estructuras (la base roja es el reflejo de la azul).
+const BLUE_LAYOUT = {
+  fountain: { x: -138, z: 0 },
+  nexus: { x: -122, z: 0 },
+  towers: [
+    { lane: 'top', tier: 1, x: -50, z: -72 }, { lane: 'top', tier: 2, x: -104, z: -60 },
+    { lane: 'mid', tier: 1, x: -45, z: 0 }, { lane: 'mid', tier: 2, x: -82, z: 0 },
+    { lane: 'bot', tier: 1, x: -50, z: 72 }, { lane: 'bot', tier: 2, x: -104, z: 60 },
+  ],
+};
+const mirror = (p) => ({ ...p, x: -p.x });
 export const LAYOUT = {
-  blue: { fountain: -96, nexus: -84, towers: [{ x: -30, tier: 1 }, { x: -57, tier: 2 }] },
-  red: { fountain: 96, nexus: 84, towers: [{ x: 30, tier: 1 }, { x: 57, tier: 2 }] },
+  blue: BLUE_LAYOUT,
+  red: { fountain: mirror(BLUE_LAYOUT.fountain), nexus: mirror(BLUE_LAYOUT.nexus), towers: BLUE_LAYOUT.towers.map(mirror) },
 };
 
 export const TEAMS = {
@@ -21,10 +43,10 @@ export const TEAMS = {
 export const CONST = {
   startGold: 500,
   passiveGold: 2.2, // oro por segundo
-  waveInterval: 28,
-  firstWave: 4,
-  fountainRadius: 9,
-  shopRadius: 16,
+  waveInterval: 30,
+  firstWave: 5,
+  fountainRadius: 10,
+  shopRadius: 20,
   xpRange: 15,
   maxLevel: 18,
   heroKillGold: 300,
@@ -75,6 +97,7 @@ export const HEROES = {
         desc: 'Clava la espada y crea un área sagrada durante 5 s: los aliados dentro reciben un escudo de 150/250/350, se curan 30/50/70 por segundo y recuperan 2 s de enfriamiento. Los enemigos dentro son ralentizados un 25 %.' },
     ],
     build: ['shield', 'tear', 'boots', 'aegis', 'crystal', 'heart'],
+    prio: [1, 0, 2],
   },
 
   fotsor: {
@@ -107,6 +130,7 @@ export const HEROES = {
         desc: 'Detiene el tiempo en un área: los enemigos quedan congelados 1,5 s y, al reanudarse, Fotsor descarga 200/325/450 (+80 % AD) de daño mágico de fuego sobre cada uno.' },
     ],
     build: ['fang', 'boots', 'ember', 'heart', 'thorns', 'katana'],
+    prio: [0, 2, 1],
     // Modelo animado (.glb). Prueba con RobotExpressive (CC0, Tomás Laulhé) desde el
     // repositorio de three.js, teñido de hueso. Para usar otro, pon su ruta en 'url'
     // (p. ej. 'models/fotsor.glb') y los nombres de sus animaciones en 'anims'.
@@ -186,6 +210,210 @@ export const HEROES = {
     ],
     build: ['scope', 'trigger', 'feather', 'fang', 'katana', 'scope'],
   },
+
+  kouji: {
+    id: 'kouji',
+    name: 'Kouji Kitaeda',
+    title: 'Cazador arcano del clan Kitaeda',
+    role: 'Tirador',
+    melee: false,
+    color: '#3fd8d0',
+    attackColor: 0x6ff6ff,
+    quote: '«Una buena flecha vale más que cien promesas».',
+    lore: 'Artesano de Ner y capitán de los Blood Hawks. Forja e imbuye sus propias flechas y nunca deja de estudiar algo nuevo.',
+    base: { hp: 545, mp: 330, ad: 60, ap: 0, armor: 24, mr: 30, as: 0.7, range: 8, speed: 6.9, hpRegen: 2.6, mpRegen: 6 },
+    growth: { hp: 88, mp: 38, ad: 3.6, ap: 0, armor: 3.5, mr: 1.0, as: 0.024 },
+    passive: {
+      id: 'kou_p', name: 'Puntas Kitaeda', icon: '🏹',
+      desc: 'Cada tercer ataque básico dispara una flecha especial del clan: hace un 50 % de su daño de ataque como daño mágico extra y ralentiza un 30 % durante 1,5 s.',
+    },
+    abilities: [
+      { id: 'kou_q', key: 'Q', name: 'Disparo curvo', icon: '🎯', cost: [35, 40, 45, 50, 55], cd: [7, 6.5, 6, 5.5, 5], range: 11,
+        dmg: [60, 95, 130, 165, 200], ai: 'mark',
+        desc: 'Una flecha arcana rodea a los súbditos y persigue al enemigo más cercano al cursor: 60/95/130/165/200 (+90 % AD) de daño físico y lo ralentiza un 30 % durante 1,5 s.' },
+      { id: 'kou_w', key: 'W', name: 'Espíritu sanador', icon: '🍃', cost: [70, 75, 80, 85, 90], cd: [16, 15, 14, 13, 12], range: 9, radius: 3.5,
+        heal: [15, 25, 35, 45, 55], ai: 'healZone',
+        desc: 'Invoca un espíritu de la naturaleza durante 4 s: los aliados en su área se curan 15/25/35/45/55 (+10 % AP) por segundo y ganan un 15 % de velocidad.' },
+      { id: 'kou_e', key: 'E', name: 'Velo de la naturaleza', icon: '🌫️', cost: [50, 50, 50, 50, 50], cd: [16, 15, 14, 13, 12], range: 6,
+        ai: 'escape',
+        desc: 'Se envuelve en hojas y salta hacia el cursor. Su siguiente ataque básico es un golpe crítico garantizado.' },
+      { id: 'kou_r', key: 'R', name: 'Flecha de trueno', icon: '🌩️', cost: [100, 100, 100], cd: [80, 70, 60], range: 24,
+        dmg: [200, 320, 440], ai: 'lineUlt',
+        desc: 'Tensa el arco 0,5 s y suelta una gran flecha de trueno que atraviesa a todos los enemigos en línea: 200/320/440 (+90 % AD) de daño físico. Al final del recorrido estalla en una tormenta que aturde 1 s.' },
+    ],
+    build: ['scope', 'trigger', 'boots', 'katana', 'feather', 'fang'],
+    prio: [0, 2, 1],
+  },
+
+  grimdarkus: {
+    id: 'grimdarkus',
+    name: 'Grimdarkus II',
+    title: 'Emperador de Aurane · El Prodigio de Terra Mortis',
+    role: 'Tanque',
+    melee: true,
+    color: '#8f9bc8',
+    attackColor: 0x9fb0ff,
+    quote: '«Aurane no se arrodilla».',
+    lore: 'Clérigo oscuro y emperador de Aurane. Fue enemigo de los Blood Hawks y hoy lucha a su lado con el cubo azul de Lucavi.',
+    base: { hp: 720, mp: 290, ad: 60, ap: 10, armor: 40, mr: 34, as: 0.62, range: 2.7, speed: 6.8, hpRegen: 3.4, mpRegen: 5.5 },
+    growth: { hp: 110, mp: 36, ad: 3.2, ap: 3, armor: 4.6, mr: 1.8, as: 0.014 },
+    passive: {
+      id: 'gri_p', name: 'Señor de Terra Mortis', icon: '🦬',
+      desc: 'Gana 6 de armadura y de resistencia mágica por cada héroe enemigo a menos de 8 m (máximo 4).',
+    },
+    abilities: [
+      { id: 'gri_q', key: 'Q', name: 'Golpe del cuerno', icon: '🐂', cost: [45, 50, 55, 60, 65], cd: [11, 10.5, 10, 9.5, 9], range: 6,
+        dmg: [60, 100, 140, 180, 220], ai: 'gapclose',
+        desc: 'Embiste con el cuerno del yelmo: el primer enemigo alcanzado recibe 60/100/140/180/220 (+6 % de su vida máx.) de daño físico y queda aturdido 1 s.' },
+      { id: 'gri_w', key: 'W', name: 'Plegaria oscura', icon: '🌑', cost: [50, 55, 60, 65, 70], cd: [14, 13, 12, 11, 10], range: 0, radius: 3.5,
+        dmg: [20, 30, 40, 50, 60], dr: [20, 22, 24, 26, 28], ai: 'selfFight',
+        desc: 'Se rodea de sombras durante 4 s: recibe un 20/22/24/26/28 % menos de daño y los enemigos cercanos sufren 20/30/40/50/60 (+2 % de su vida máx.) de daño mágico por segundo.' },
+      { id: 'gri_e', key: 'E', name: 'Legión de Aurane', icon: '🛡️', cost: [70, 70, 70, 70, 70], cd: [18, 17, 16, 15, 14], range: 8, radius: 4,
+        dmg: [50, 80, 110, 140, 170], ai: 'area',
+        desc: 'Invoca una fila de caballeros negros que empujan a los enemigos, les infligen 50/80/110/140/170 (+40 % AP) de daño mágico y los ralentizan un 40 % durante 2 s.' },
+      { id: 'gri_r', key: 'R', name: 'Cubo azul de Lucavi', icon: '🧊', cost: [100, 100, 100], cd: [100, 85, 70], range: 0, radius: 7,
+        shield: [150, 250, 350], ai: 'ultDome',
+        desc: 'Activa el cubo y levanta una cúpula de cristal azul durante 4 s: los aliados dentro reciben un escudo de 150/250/350 (+10 % de su vida máx.) y los enemigos dentro quedan ralentizados un 40 % y no pueden salir.' },
+    ],
+    build: ['shield', 'boots', 'heart', 'aegis', 'thorns', 'cloak'],
+    prio: [0, 1, 2],
+  },
+
+  ikaruus: {
+    id: 'ikaruus',
+    name: 'Ikaruus Rukhu',
+    title: 'Samurái de Kugane',
+    role: 'Asesino',
+    melee: true,
+    color: '#ff7a9a',
+    attackColor: 0xffb0c8,
+    quote: '«El cerezo florece una vez; la hoja, cuantas haga falta».',
+    lore: 'Samurái semielfo de Kugane, de pelo y ojos rojos. Combina el filo de la flor de cerezo, la luna y el hielo con el fuego de cuatro bestias, y busca redimirse de su pasado.',
+    base: { hp: 580, mp: 280, ad: 68, ap: 0, armor: 28, mr: 30, as: 0.72, range: 2.6, speed: 7.3, hpRegen: 2.8, mpRegen: 6 },
+    growth: { hp: 92, mp: 32, ad: 4.2, ap: 0, armor: 3.4, mr: 1.2, as: 0.022 },
+    passive: {
+      id: 'ika_p', name: 'Filo del cerezo', icon: '🌸',
+      desc: 'Tras lanzar una habilidad, su siguiente ataque básico desata una lluvia de pétalos: hace un 60 % de su daño de ataque como daño mágico extra.',
+    },
+    abilities: [
+      { id: 'ika_q', key: 'Q', name: 'Corte de luna creciente', icon: '🌙', cost: [30, 30, 30, 30, 30], cd: [8, 7.5, 7, 6.5, 6], range: 6,
+        dmg: [70, 105, 140, 175, 210], ai: 'gapclose',
+        desc: 'Atraviesa a los enemigos en línea recta con un corte: 70/105/140/175/210 (+90 % AD) de daño físico a todos los que toca. Si mata a un héroe, la habilidad se recarga al instante.' },
+      { id: 'ika_w', key: 'W', name: 'Aliento de escarcha', icon: '❄️', cost: [50, 55, 60, 65, 70], cd: [10, 9.5, 9, 8.5, 8], range: 5,
+        dmg: [50, 80, 110, 140, 170], ai: 'cone',
+        desc: 'Un tajo helado en abanico: 50/80/110/140/170 (+60 % AD) de daño mágico y ralentiza un 50 % durante 1,5 s.' },
+      { id: 'ika_e', key: 'E', name: 'Danza de pétalos', icon: '🍃', cost: [60, 60, 60, 60, 60], cd: [16, 15, 14, 13, 12], range: 7,
+        ai: 'engage',
+        desc: 'Se deshace en pétalos y reaparece a la espalda del enemigo más cercano al cursor. Recibe un 25 % menos de daño durante 1,5 s.' },
+      { id: 'ika_r', key: 'R', name: 'Las cuatro bestias', icon: '🐉', cost: [100, 100, 100], cd: [90, 75, 60], range: 8, radius: 3.8,
+        dmg: [70, 110, 150], ai: 'ultArea',
+        desc: 'Desata cuatro ráfagas de fuego sobre un área: el tigre golpea, el fénix quema, el dragón aturde 0,75 s y la tortuga le da un escudo. Cada bestia hace 70/110/150 (+50 % AD) de daño mágico.' },
+    ],
+    build: ['katana', 'boots', 'fang', 'scope', 'heart', 'thorns'],
+    prio: [0, 1, 2],
+  },
+
+  crixus: {
+    id: 'crixus',
+    name: 'Crixus',
+    title: 'Caballero de la muerte de Komódo',
+    role: 'Luchador',
+    melee: true,
+    color: '#5fd38a',
+    attackColor: 0x8affb0,
+    quote: '«Lady Evangeline tiene hambre».',
+    lore: 'Caballero de la muerte con armadura completa de Komódo. Su espada, Lady Evangeline, arde con fuego y necrosis, roba vida y pega más fuerte cuanto más herido está.',
+    base: { hp: 650, mp: 260, ad: 64, ap: 0, armor: 34, mr: 32, as: 0.66, range: 2.7, speed: 7.0, hpRegen: 3.0, mpRegen: 5 },
+    growth: { hp: 104, mp: 32, ad: 3.9, ap: 0, armor: 4.0, mr: 1.5, as: 0.018 },
+    passive: {
+      id: 'cri_p', name: 'Lady Evangeline', icon: '🗡️',
+      desc: 'Sus ataques básicos hacen hasta un 30 % más de daño y le curan hasta un 30 % de su daño de ataque cuanto menos vida le queda.',
+    },
+    abilities: [
+      { id: 'cri_q', key: 'Q', name: 'Tajo necrótico', icon: '☠️', cost: [35, 35, 35, 35, 35], cd: [7, 6.5, 6, 5.5, 5], range: 3.8,
+        dmg: [60, 95, 130, 165, 200], ai: 'cone',
+        desc: 'Un barrido de fuego y necrosis: 60/95/130/165/200 (+100 % AD) de daño físico en abanico. Se cura un 30 % del daño hecho a héroes.' },
+      { id: 'cri_w', key: 'W', name: 'Armadura de Komódo', icon: '🛡️', cost: [50, 55, 60, 65, 70], cd: [15, 14, 13, 12, 11], range: 0,
+        shield: [80, 120, 160, 200, 240], ai: 'selfFight',
+        desc: 'Su armadura arde: gana un escudo de 80/120/160/200/240 (+10 % de su vida máx.) y un 30 % de velocidad de ataque durante 4 s.' },
+      { id: 'cri_e', key: 'E', name: 'Cadenas de fuego', icon: '⛓️', cost: [60, 60, 60, 60, 60], cd: [15, 14, 13, 12, 11], range: 9,
+        dmg: [50, 80, 110, 140, 170], ai: 'skillshot',
+        desc: 'Lanza una cadena ardiente. Si atrapa a un enemigo le hace 50/80/110/140/170 (+50 % AD) de daño mágico, lo inmoviliza 0,8 s y Crixus se lanza hacia él.' },
+      { id: 'cri_r', key: 'R', name: 'Último aliento', icon: '💀', cost: [100, 100, 100], cd: [100, 85, 70], range: 0,
+        ad: [30, 50, 70], ai: 'ultLow',
+        desc: 'Durante 5 s no puede bajar de 1 de vida y gana 30/50/70 de daño de ataque. Al terminar se cura un 40 % del daño que hizo mientras tanto.' },
+    ],
+    build: ['fang', 'boots', 'heart', 'katana', 'thorns', 'aegis'],
+    prio: [0, 2, 1],
+  },
+
+  legna: {
+    id: 'legna',
+    name: 'Legna',
+    title: 'Clérigo de la protección · Elegido de Astora',
+    role: 'Soporte',
+    melee: false,
+    color: '#9ff0c8',
+    attackColor: 0xd8fff0,
+    quote: '«Astora me eligió para que nadie caiga solo».',
+    lore: 'Joven clérigo humano del dominio de la protección, elegido por la diosa Astora para sanar a la Orden.',
+    base: { hp: 540, mp: 420, ad: 48, ap: 20, armor: 24, mr: 32, as: 0.62, range: 6.5, speed: 6.9, hpRegen: 2.6, mpRegen: 8 },
+    growth: { hp: 86, mp: 50, ad: 2.4, ap: 6, armor: 3.4, mr: 1.2, as: 0.012 },
+    passive: {
+      id: 'leg_p', name: 'Luz de Astora', icon: '☀️',
+      desc: 'Los héroes aliados a menos de 7 m recuperan 2 (+0,4 por nivel) de vida por segundo.',
+    },
+    abilities: [
+      { id: 'leg_q', key: 'Q', name: 'Rayo sagrado', icon: '🔆', cost: [40, 45, 50, 55, 60], cd: [6, 5.5, 5, 4.5, 4], range: 11,
+        dmg: [55, 90, 125, 160, 195], ai: 'skillshot',
+        desc: 'Dispara un rayo de luz que golpea al primer enemigo: 55/90/125/160/195 (+60 % AP) de daño mágico.' },
+      { id: 'leg_w', key: 'W', name: 'Égida de Bhia', icon: '🔰', cost: [60, 65, 70, 75, 80], cd: [12, 11, 10, 9, 8], range: 9,
+        shield: [70, 110, 150, 190, 230], ai: 'shieldAlly',
+        desc: 'Protege al aliado más cercano al cursor (o a sí mismo) con un escudo de 70/110/150/190/230 (+50 % AP) durante 3 s y un 20 % de velocidad.' },
+      { id: 'leg_e', key: 'E', name: 'Santuario', icon: '⛪', cost: [70, 70, 70, 70, 70], cd: [16, 15, 14, 13, 12], range: 9, radius: 3,
+        dmg: [50, 80, 110, 140, 170], ai: 'area',
+        desc: 'Marca un círculo sagrado que, tras 0,5 s, inmoviliza 1 s a los enemigos dentro y les hace 50/80/110/140/170 (+40 % AP) de daño mágico.' },
+      { id: 'leg_r', key: 'R', name: 'Bendición de Astora', icon: '🕊️', cost: [100, 100, 100], cd: [110, 95, 80], range: 0, radius: 14,
+        heal: [150, 250, 350], ai: 'ultHealAll',
+        desc: 'Astora responde: cura 150/250/350 (+50 % AP) a todos los héroes aliados a menos de 14 m, les quita los efectos negativos y reciben un 25 % menos de daño durante 2 s.' },
+    ],
+    build: ['tome', 'tear', 'boots', 'crystal', 'aegis', 'staff'],
+    prio: [1, 0, 2],
+  },
+
+  catarina: {
+    id: 'catarina',
+    name: 'Catarina Fersen',
+    title: 'Emperatriz de Kugane · Guerrera de hielo',
+    role: 'Maga',
+    melee: false,
+    color: '#a8d8ff',
+    attackColor: 0xcfeeff,
+    quote: '«El hielo no perdona, pero tampoco olvida».',
+    lore: 'Guerrera de hielo de la familia Fersen de Linerian y hoy Emperatriz de Kugane.',
+    base: { hp: 525, mp: 430, ad: 50, ap: 25, armor: 22, mr: 30, as: 0.64, range: 7.2, speed: 6.8, hpRegen: 2.4, mpRegen: 8 },
+    growth: { hp: 86, mp: 52, ad: 2.6, ap: 7, armor: 3.4, mr: 1.0, as: 0.015 },
+    passive: {
+      id: 'cat_p', name: 'Corazón de escarcha', icon: '💠',
+      desc: 'Sus habilidades acumulan escarcha en los enemigos. Con 3 cargas, el objetivo queda congelado 1 s (una vez cada 6 s por objetivo).',
+    },
+    abilities: [
+      { id: 'cat_q', key: 'Q', name: 'Lanza de hielo', icon: '🧊', cost: [40, 45, 50, 55, 60], cd: [6, 5.5, 5, 4.5, 4], range: 12,
+        dmg: [60, 95, 130, 165, 200], ai: 'skillshot',
+        desc: 'Lanza una lanza de hielo que atraviesa a todos los enemigos en línea: 60/95/130/165/200 (+65 % AP) de daño mágico y un 30 % de ralentización durante 1,5 s.' },
+      { id: 'cat_w', key: 'W', name: 'Tormenta helada', icon: '🌨️', cost: [70, 75, 80, 85, 90], cd: [13, 12, 11, 10, 9], range: 10, radius: 3.5,
+        dmg: [25, 40, 55, 70, 85], ai: 'area',
+        desc: 'Una ventisca cubre un área durante 3 s: los enemigos dentro sufren 25/40/55/70/85 (+15 % AP) de daño mágico por segundo y quedan ralentizados un 35 %.' },
+      { id: 'cat_e', key: 'E', name: 'Paso glacial', icon: '⛸️', cost: [55, 55, 55, 55, 55], cd: [16, 15, 14, 13, 12], range: 6,
+        shield: [50, 80, 110, 140, 170], ai: 'escape',
+        desc: 'Se desliza sobre el hielo hacia el cursor y gana un escudo de 50/80/110/140/170 (+30 % AP) durante 2 s.' },
+      { id: 'cat_r', key: 'R', name: 'Invierno de Linerian', icon: '🏔️', cost: [100, 100, 100], cd: [90, 75, 60], range: 12, radius: 6,
+        dmg: [220, 340, 460], ai: 'ultArea',
+        desc: 'Invoca el invierno: tras 1 s, un glaciar cae sobre un área enorme y hace 220/340/460 (+80 % AP) de daño mágico y aturde 1,5 s a los enemigos.' },
+    ],
+    build: ['tome', 'crystal', 'boots', 'moon', 'staff', 'cloak'],
+    prio: [0, 1, 2],
+  },
 };
 
 export const DIFFICULTY = {
@@ -194,7 +422,7 @@ export const DIFFICULTY = {
   dificil: { name: 'Difícil', dmg: 1.15, think: 0.14, gold: 1.2 },
 };
 
-export const HERO_ORDER = ['josephine', 'fotsor', 'yeslie', 'astrid'];
+export const HERO_ORDER = ['josephine', 'fotsor', 'yeslie', 'astrid', 'kouji', 'grimdarkus', 'ikaruus', 'crixus', 'legna', 'catarina'];
 
 // ---------------------------------------------------------------------------
 // OBJETOS (tienda)
@@ -263,7 +491,7 @@ export const MINIONS = {
 };
 
 export const STRUCTURES = {
-  tower: { hp: 2000, ad: 155, armor: 45, mr: 45, as: 0.85, range: 10.5, radius: 1.6 },
-  nexus: { hp: 3000, ad: 170, armor: 40, mr: 40, as: 0.9, range: 10.5, radius: 3.4 },
-  boss: { hp: 3600, ad: 185, armor: 40, mr: 40, as: 0.9, range: 11.5, radius: 3.6 },
+  tower: { hp: 3200, ad: 155, armor: 45, mr: 45, as: 0.85, range: 10.5, radius: 1.6 },
+  nexus: { hp: 4500, ad: 170, armor: 40, mr: 40, as: 0.9, range: 10.5, radius: 3.4 },
+  boss: { hp: 5000, ad: 185, armor: 40, mr: 40, as: 0.9, range: 11.5, radius: 3.6 },
 };

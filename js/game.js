@@ -1,6 +1,7 @@
 // Núcleo del juego: unidades, combate, oleadas, estructuras y bucle principal.
 import * as THREE from 'three';
-import { HEROES, ITEMS, LAYOUT, MAP, CONST, MINIONS, STRUCTURES, TEAMS, HERO_ORDER, DIFFICULTY, xpToNext } from './config.js';
+import { HEROES, ITEMS, LAYOUT, MAP, CONST, MINIONS, STRUCTURES, TEAMS, HERO_ORDER, DIFFICULTY, LANES, LANE_NAMES, xpToNext } from './config.js';
+import { laneLength, lanePoint } from './map.js';
 import { buildHeroModel, buildMinionModel, buildStructureModel, buildWorld, buildDragon, animateModel, corrupt } from './models.js';
 import { Effects } from './effects.js';
 import { ABILITY_IMPL, PASSIVE_IMPL } from './abilities.js';
@@ -32,8 +33,8 @@ export class Game {
     this.listeners = {};
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x1a2030);
-    this.scene.fog = new THREE.Fog(0x1a2030, 60, 140);
+    this.scene.background = new THREE.Color(0x24304a);
+    this.scene.fog = new THREE.Fog(0x24304a, 70, 170);
 
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.5, 400);
     this.camZoom = 1;
@@ -50,10 +51,11 @@ export class Game {
     this.scene.add(sun, sun.target);
     // luz rojiza en la base enemiga
     const redLight = new THREE.PointLight(0xff3050, 60, 40, 1.6);
-    redLight.position.set(84, 8, 0);
+    redLight.position.set(LAYOUT.red.nexus.x, 8, 0);
     this.scene.add(redLight);
 
-    buildWorld(this.scene);
+    this.world = buildWorld(this.scene);
+    this.obstacles = this.world.obstacles;
     this.fx = new Effects(this.scene);
 
     this.setupStructures();
@@ -93,14 +95,16 @@ export class Game {
       const L = LAYOUT[team];
       for (const t of L.towers) {
         const S = STRUCTURES.tower;
-        const u = this.makeUnit({ team, kind: 'tower', x: t.x, z: 0, radius: S.radius, base: { ...S, mp: 0 },
+        const u = this.makeUnit({ team, kind: 'tower', x: t.x, z: t.z, radius: S.radius, base: { ...S, mp: 0 },
           model: buildStructureModel(team, 'tower'), height: 8 });
         u.tier = t.tier;
-        u.name = team === 'blue' ? (t.tier === 1 ? 'Torre exterior de Zugri' : 'Torre interior de Zugri') : (t.tier === 1 ? 'Obelisco exterior' : 'Obelisco interior');
+        u.lane = t.lane;
+        const where = LANE_NAMES[t.lane];
+        u.name = team === 'blue' ? `Torre ${t.tier === 1 ? 'exterior' : 'interior'} ${where}` : `Obelisco ${t.tier === 1 ? 'exterior' : 'interior'} ${where}`;
       }
       const kind = team === 'blue' ? 'nexus' : 'boss';
       const S = STRUCTURES[kind];
-      const u = this.makeUnit({ team, kind, x: L.nexus, z: 0, radius: S.radius, base: { ...S, mp: 0 },
+      const u = this.makeUnit({ team, kind, x: L.nexus.x, z: L.nexus.z, radius: S.radius, base: { ...S, mp: 0 },
         model: buildStructureModel(team, kind), height: team === 'blue' ? 15 : 9 });
       u.name = team === 'blue' ? 'Torre de Zugri' : 'Lorik';
       u.state.rootCd = 6; u.state.summonCd = 12;
@@ -109,36 +113,35 @@ export class Game {
   }
 
   setupHeroes() {
+    // 7 contra 7: ningún equipo repite héroe, pero el mismo héroe puede estar en los
+    // dos bandos (el de la Legión, con sus colores oscuros)
     const pid = this.opts.heroId;
-    const others = HERO_ORDER.filter((h) => h !== pid);
-    shuffle(others);
-    const blueHeroes = [pid];
-    const redHeroes = [];
-    if (this.opts.mode === '2v2') {
-      blueHeroes.push(others[0]);
-      redHeroes.push(others[1], others[2]);
-    } else {
-      redHeroes.push(others[0]);
-    }
+    const solo = this.opts.mode === '1v1';
+    const blueHeroes = [pid, ...shuffle(HERO_ORDER.filter((h) => h !== pid)).slice(0, solo ? 0 : 6)];
+    const redHeroes = solo ? [shuffle(HERO_ORDER.filter((h) => h !== pid))[0]] : shuffle([...HERO_ORDER]).slice(0, 7);
+    // carriles: el primero va al centro y el resto se reparte de dos en dos
+    const LANE_SLOTS = ['mid', 'top', 'bot', 'top', 'bot', 'mid', 'mid'];
     this.heroes = [];
     blueHeroes.forEach((id, i) => {
-      const h = this.makeHero(id, 'blue', i === 0 && !this.opts.auto, i);
+      const h = this.makeHero(id, 'blue', i === 0 && !this.opts.auto, i, LANE_SLOTS[i]);
       if (i === 0) this.player = h;
     });
-    redHeroes.forEach((id, i) => this.makeHero(id, 'red', false, i));
+    redHeroes.forEach((id, i) => this.makeHero(id, 'red', false, i, LANE_SLOTS[i]));
   }
 
-  makeHero(id, team, isPlayer, idx) {
+  makeHero(id, team, isPlayer, idx, lane = 'mid') {
     const def = HEROES[id];
     const corrupted = team === 'red';
     const model = buildHeroModel(id, corrupted, def.glb);
-    const fx = LAYOUT[team].fountain;
-    const u = this.makeUnit({ team, kind: 'hero', x: fx + TEAMS[team].dir * 2, z: (idx - 0.5) * 3, radius: 0.75,
+    const sp = this.spawnPoint(team, idx);
+    const u = this.makeUnit({ team, kind: 'hero', x: sp.x, z: sp.z, radius: 0.75,
       base: def.base, growth: def.growth, model, isPlayer, isBot: !isPlayer, height: 3.1, scale: 1.35 });
     u.heroId = id;
     u.def = def;
-    u.name = corrupted ? `${def.name} corrompida`.replace('Fotsor corrompida', 'Fotsor corrompido') : def.name;
+    u.name = def.name;
     u.corrupted = corrupted;
+    u.lane = lane;
+    u.slot = idx;
     u.gold = CONST.startGold;
     u.abilities = def.abilities.map((a) => ({ def: a, rank: 0, cd: 0 }));
     u.skillPoints = 1;
@@ -153,6 +156,26 @@ export class Game {
     this.heroes.push(u);
     if (!isPlayer || this.opts.autoLevel) this.autoLevel(u);
     return u;
+  }
+
+  // Puestos en círculo alrededor de la fuente
+  spawnPoint(team, idx) {
+    const f = LAYOUT[team].fountain;
+    const a = (idx / 7) * Math.PI * 2;
+    return { x: f.x + TEAMS[team].dir * 2 + Math.cos(a) * 3.5, z: f.z + Math.sin(a) * 3.5 };
+  }
+
+  nearFountain(u, team, r) {
+    const f = LAYOUT[team].fountain;
+    return Math.hypot(u.pos.x - f.x, u.pos.z - f.z) < r;
+  }
+
+  // Nombre para los mensajes: si el mismo héroe está en los dos equipos, el de la
+  // Legión lleva la etiqueta para distinguirlos
+  label(u) {
+    if (!u) return '';
+    const dup = u.heroId && this.heroes.some((h) => h !== u && h.heroId === u.heroId);
+    return dup && u.team === 'red' ? `${u.name} (Legión)` : u.name;
   }
 
   makeTeamRing(team, isPlayer) {
@@ -198,7 +221,7 @@ export class Game {
         return spd * (1 - Math.min(0.7, this.buffMax(u, 'slow')));
       }
       case 'cdr': return Math.min(0.4, this.itemStat(u, 'cdr'));
-      case 'crit': return Math.min(1, this.itemStat(u, 'crit'));
+      case 'crit': return Math.min(1, this.itemStat(u, 'crit') + this.buffSum(u, 'crit'));
       case 'arpen': case 'mpen': return Math.min(0.6, this.itemStat(u, k));
       case 'range': return u.base.range;
       case 'hpRegen': return u.base.hpRegen + this.itemStat(u, 'hpRegen');
@@ -362,6 +385,8 @@ export class Game {
     tgt.shields = tgt.shields.filter((s) => s.amt > 0.5);
     const hpBefore = tgt.hp;
     tgt.hp -= left;
+    if (tgt.hp <= 0 && this.getBuff(tgt, 'cri_r')) tgt.hp = 1; // Último aliento de Crixus
+    if (src?.heroId === 'crixus' && this.getBuff(src, 'cri_r')) src.state.ultDmg = (src.state.ultDmg || 0) + left;
 
     // registro de autoría
     if (src && src.kind === 'hero') {
@@ -503,7 +528,7 @@ export class Game {
   }
 
   autoLevel(u) {
-    const prio = { josephine: [1, 0, 2], fotsor: [0, 2, 1], yeslie: [0, 1, 2], astrid: [0, 1, 2] }[u.heroId];
+    const prio = u.def.prio ?? [0, 1, 2];
     let guard = 10;
     while (u.skillPoints > 0 && guard-- > 0) {
       if (this.levelAbility(u, 3)) continue;
@@ -517,7 +542,7 @@ export class Game {
 
   // ------------------------------------------------------------------ tienda
   inShop(u) {
-    return Math.abs(u.pos.x - LAYOUT[u.team].fountain) < CONST.shopRadius && u.alive || !u.alive;
+    return !u.alive || this.nearFountain(u, u.team, CONST.shopRadius);
   }
 
   buy(u, id) {
@@ -593,7 +618,7 @@ export class Game {
     this.fx.pillar(u.pos, col, 0.8, 1.0, 12);
     this.fx.flash(u.pos, col, 36, 16, 0.6);
     this.shake(0.35, u.pos);
-    if (this.player && u.team !== this.player.team) this.emit('message', { text: `¡${u.name} usa ${def.name}!`, kind: 'warn' });
+    if (this.player && u.team !== this.player.team) this.emit('message', { text: `¡${this.label(u)} usa ${def.name}!`, kind: 'warn' });
   }
 
   // Temblor de cámara; se atenúa con la distancia al jugador
@@ -632,6 +657,7 @@ export class Game {
       if (hook) { dmg *= hook.mult ?? 1; bonusMagic += hook.magic ?? 0; if (hook.color) color = hook.color; }
       const cc = this.stat(u, 'crit');
       if (cc > 0 && Math.random() < cc) { dmg *= 1.75; crit = true; }
+      if (this.getBuff(u, 'kou_e')) this.removeBuff(u, 'kou_e');
       const onhit = this.stat(u, 'onhit');
       if (onhit > 0) { bonusMagic += onhit; if (!hook?.color) color = 0xff7a30; }
       const jq = this.getBuff(u, 'jos_q');
@@ -643,6 +669,7 @@ export class Game {
       }
       if (u.heroId === 'yeslie') { color = 0x7ff6ff; }
       if (u.heroId === 'astrid') { color = 0x9ad8ff; size = 0.12; }
+      if (u.def.attackColor && !hook?.color && !jq && !onhit) color = u.def.attackColor;
     }
     if (u.kind === 'minion') {
       color = u.team === 'blue' ? 0xffe08a : 0xff3a5a;
@@ -790,18 +817,35 @@ export class Game {
   }
 
   clampPos(p) {
-    p.x = Math.max(MAP.minX - 4, Math.min(MAP.maxX + 4, p.x));
-    p.z = Math.max(-MAP.laneHalf, Math.min(MAP.laneHalf, p.z));
+    p.x = Math.max(MAP.minX, Math.min(MAP.maxX, p.x));
+    p.z = Math.max(MAP.minZ, Math.min(MAP.maxZ, p.z));
   }
 
   moveToward(u, point, dt, stopDist = 0.1) {
     if (!this.canMove(u)) return false;
-    const dx = point.x - u.pos.x, dz = point.z - u.pos.z;
+    let dx = point.x - u.pos.x, dz = point.z - u.pos.z;
     const d = Math.hypot(dx, dz);
     if (d <= stopDist) return true;
+    dx /= d; dz /= d;
+    // rodear las rocas y arboledas que haya delante, por el lado más corto
+    for (const o of this.obstacles) {
+      const ox = o.x - u.pos.x, oz = o.z - u.pos.z;
+      const od = Math.hypot(ox, oz);
+      const clear = o.r + u.radius + 1.2;
+      if (od > clear + 2 || od - o.r > d) continue;
+      const ahead = (ox * dx + oz * dz) / od;
+      if (ahead < 0.15) continue;
+      let tx = -oz / od, tz = ox / od;
+      if (tx * dx + tz * dz < 0) { tx = -tx; tz = -tz; }
+      const w = Math.min(1, (clear + 2 - od) / 2) * ahead;
+      dx += tx * w * 1.8 - (ox / od) * w * 0.5;
+      dz += tz * w * 1.8 - (oz / od) * w * 0.5;
+      const l = Math.hypot(dx, dz) || 1;
+      dx /= l; dz /= l;
+    }
     const step = Math.min(d, this.stat(u, 'speed') * dt);
-    u.pos.x += (dx / d) * step;
-    u.pos.z += (dz / d) * step;
+    u.pos.x += dx * step;
+    u.pos.z += dz * step;
     u.facing = Math.atan2(dx, dz);
     u.moving = true;
     return d - step <= stopDist;
@@ -835,16 +879,20 @@ export class Game {
       u.hp = Math.min(u.maxHp, u.hp + this.stat(u, 'hpRegen') * dt);
       u.mp = Math.min(u.maxMp, u.mp + this.stat(u, 'mpRegen') * dt);
       PASSIVE_IMPL[u.heroId]?.update?.(this, u, dt);
+      // viento de la base: los caminos desde casa son largos, así que se corre más cerca de ella
+      if (this.nearFountain(u, u.team, 45)) {
+        this.addBuff(u, 'spd', 0.5, 0.6, { key: 'home_wind' });
+        if (Math.random() < dt * 6) this.fx.spark(u.pos.clone().setY(0.3), u.team === 'blue' ? 0xbfe8ff : 0xff8ab0, 0.1, 0.4, 0.5);
+      }
       // fuente
-      const fx = LAYOUT[u.team].fountain;
-      if (Math.abs(u.pos.x - fx) < CONST.fountainRadius && Math.abs(u.pos.z) < CONST.fountainRadius) {
+      if (this.nearFountain(u, u.team, CONST.fountainRadius)) {
         u.hp = Math.min(u.maxHp, u.hp + u.maxHp * 0.12 * dt);
         u.mp = Math.min(u.maxMp, u.mp + u.maxMp * 0.12 * dt);
       }
       const efx = LAYOUT[this.enemiesOf(u.team)].fountain;
-      if (Math.abs(u.pos.x - efx) < CONST.fountainRadius + 1) {
+      if (this.nearFountain(u, this.enemiesOf(u.team), CONST.fountainRadius + 1)) {
         this.dealDamage(null, u, 600 * dt, 'true');
-        if (Math.random() < 0.3) this.fx.beam(new THREE.Vector3(efx, 6, 0), u.pos.clone().setY(1), 0xffffff, 0.1);
+        if (Math.random() < 0.3) this.fx.beam(new THREE.Vector3(efx.x, 6, efx.z), u.pos.clone().setY(1), 0xffffff, 0.1);
         if (!u.alive) return;
       }
     }
@@ -936,7 +984,20 @@ export class Game {
         }
       }
     }
-    for (const u of list) if (u.kind === 'hero' || u.kind === 'minion') this.clampPos(u.pos);
+    for (const u of list) {
+      if (u.kind !== 'hero' && u.kind !== 'minion') continue;
+      // las rocas y arboledas no se pueden atravesar
+      for (const o of this.obstacles) {
+        const dx = u.pos.x - o.x, dz = u.pos.z - o.z;
+        const min = o.r + u.radius;
+        const d2 = dx * dx + dz * dz;
+        if (d2 >= min * min) continue;
+        const d = Math.sqrt(d2) || 0.01;
+        u.pos.x = o.x + (dx / d) * min;
+        u.pos.z = o.z + (dz / d) * min;
+      }
+      this.clampPos(u.pos);
+    }
   }
 
   // ------------------------------------------------------------------ oleadas
@@ -946,23 +1007,27 @@ export class Game {
     if (this.waveCount % 3 === 0) types.push('melee');
     for (const team of ['blue', 'red']) {
       const dir = TEAMS[team].dir;
-      // si el enemigo ya no tiene torres, salen súbditos de asedio
-      const enemyTowersAlive = this.units.some((u) => u.kind === 'tower' && u.team !== team && u.alive);
-      const list = enemyTowersAlive ? types : ['super', 'super', ...types];
-      list.forEach((type, i) => {
-        this.after(i * 0.7, () => {
-          if (this.over) return;
-          const sup = type === 'super';
-          const M = MINIONS[sup ? 'melee' : type];
-          const k = sup ? 2.4 : 1;
-          const base = { ...M, hp: (M.hp + M.growHp * this.waveCount) * k, ad: (M.ad + M.growAd * this.waveCount) * k, armor: M.armor + (sup ? 30 : 0), mp: 0 };
-          const x = LAYOUT[team].nexus + dir * 5;
-          const u = this.makeUnit({ team, kind: 'minion', type: sup ? 'melee' : type, x, z: (Math.random() - 0.5) * 2, radius: M.radius * (sup ? 1.4 : 1), base,
-            model: buildMinionModel(team, sup ? 'melee' : type), height: sup ? 2.8 : 2.0, scale: sup ? 1.8 : 1.25 });
-          u.superMinion = sup;
-          u.attackCd = Math.random() * 0.5;
+      for (const lane of Object.keys(LANES)) {
+        // si el enemigo ya no tiene torres en este carril, salen súbditos de asedio
+        const enemyTowersAlive = this.units.some((u) => u.kind === 'tower' && u.team !== team && u.lane === lane && u.alive);
+        const list = enemyTowersAlive ? types : ['super', 'super', ...types];
+        const start = lanePoint(lane, dir > 0 ? 2 : laneLength(lane) - 2);
+        list.forEach((type, i) => {
+          this.after(i * 0.7, () => {
+            if (this.over) return;
+            const sup = type === 'super';
+            const M = MINIONS[sup ? 'melee' : type];
+            const k = sup ? 2.4 : 1;
+            const base = { ...M, hp: (M.hp + M.growHp * this.waveCount) * k, ad: (M.ad + M.growAd * this.waveCount) * k, armor: M.armor + (sup ? 30 : 0), mp: 0 };
+            const u = this.makeUnit({ team, kind: 'minion', type: sup ? 'melee' : type, x: start.x + (Math.random() - 0.5) * 2, z: start.z + (Math.random() - 0.5) * 2,
+              radius: M.radius * (sup ? 1.4 : 1), base,
+              model: buildMinionModel(team, sup ? 'melee' : type), height: sup ? 2.8 : 2.0, scale: sup ? 1.8 : 1.25 });
+            u.superMinion = sup;
+            u.lane = lane;
+            u.attackCd = Math.random() * 0.5;
+          });
         });
-      });
+      }
     }
   }
 
@@ -971,8 +1036,9 @@ export class Game {
     for (let i = 0; i < n; i++) {
       const M = MINIONS.ranged;
       const base = { ...M, hp: M.hp + M.growHp * this.waveCount, ad: M.ad + M.growAd * this.waveCount, mp: 0 };
-      const u = this.makeUnit({ team: 'red', kind: 'minion', type: 'ranged', x: boss.pos.x - 5, z: (i - (n - 1) / 2) * 3, radius: M.radius, base,
+      const u = this.makeUnit({ team: 'red', kind: 'minion', type: 'ranged', x: boss.pos.x - 5, z: boss.pos.z + (i - (n - 1) / 2) * 3, radius: M.radius, base,
         model: buildMinionModel('red', 'ranged'), height: 2.0, scale: 1.25 });
+      u.lane = 'mid';
       this.fx.burst(u.pos, 0xb06aff, 16, 4, 0.15, 0.6, 2);
     }
   }
@@ -1017,13 +1083,19 @@ export class Game {
     }
 
     // protección de estructuras
+    // (la torre interior de un carril no se puede atacar mientras viva la exterior,
+    // y el núcleo queda expuesto en cuanto un carril se queda sin torres)
     for (const team of ['blue', 'red']) {
       const towers = this.units.filter((u) => u.team === team && u.kind === 'tower');
-      const t1 = towers.find((t) => t.tier === 1);
-      const t2 = towers.find((t) => t.tier === 2);
-      if (t2) t2.protected = !!(t1 && t1.alive);
+      for (const lane of Object.keys(LANES)) {
+        const t1 = towers.find((t) => t.lane === lane && t.tier === 1);
+        const t2 = towers.find((t) => t.lane === lane && t.tier === 2);
+        if (t2) t2.protected = !!(t1 && t1.alive);
+      }
       const core = team === 'blue' ? this.blueNexus : this.boss;
-      core.protected = towers.some((t) => t.alive);
+      const was = core.protected;
+      core.protected = Object.keys(LANES).every((lane) => towers.some((t) => t.lane === lane && t.alive));
+      if (was && !core.protected) this.emit('coreExposed', { core });
     }
 
     // oro pasivo
@@ -1056,7 +1128,8 @@ export class Game {
 
   respawn(h) {
     h.alive = true;
-    h.pos.set(LAYOUT[h.team].fountain + TEAMS[h.team].dir * 2, 0, (Math.random() - 0.5) * 3);
+    const sp = this.spawnPoint(h.team, h.slot ?? 0);
+    h.pos.set(sp.x, 0, sp.z);
     h.deathAnim = 0;
     h.recallT = 0;
     this.recalc(h, true);
@@ -1138,6 +1211,8 @@ export class Game {
         ex.glow.material = on ? GLOW_MAT : ex.glowBase || (ex.glowBase = ex.glow.material);
       }
       if (ex?.book) ex.book.position.y = 1.45 + Math.sin(t * 2.5) * 0.08;
+      if (ex?.spin) for (const o of ex.spin) { o.rotation.y += dt * 1.6; o.rotation.x += dt * 0.7; }
+      if (ex?.wheel) ex.wheel.rotation.z += dt * 0.8;
       if (ex?.lorik) {
         ex.lorik.position.y = 1.8 + Math.sin(t * 1.4) * 0.3;
         ex.bolts.rotation.y += dt * 0.8;
@@ -1149,6 +1224,7 @@ export class Game {
       if (this.hasBuff(u, 'mark') && Math.random() < 0.12) this.fx.spark(new THREE.Vector3(u.pos.x, u.height + 0.3, u.pos.z), 0xff5a5a, 0.1, 0.4, 0.3);
       if (u.shields.length && Math.random() < 0.15) this.fx.spark(new THREE.Vector3(u.pos.x + (Math.random() - 0.5), 1 + Math.random(), u.pos.z + (Math.random() - 0.5)), 0xfff2a0, 0.07, 0.5, 0.6);
     }
+    this.world.update?.(t, dt);
     this.fx.update(dt);
   }
 
