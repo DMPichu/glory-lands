@@ -6,6 +6,7 @@ import { buildHeroModel, buildMinionModel, buildStructureModel, buildWorld, buil
 import { Effects } from './effects.js';
 import { ABILITY_IMPL, PASSIVE_IMPL } from './abilities.js';
 import { heroAI, minionAI, structureAI } from './ai.js';
+import { sfx, voice } from './audio.js';
 
 const TMP = new THREE.Vector3();
 let NEXT_ID = 1;
@@ -63,6 +64,17 @@ export class Game {
   }
 
   on(ev, fn) { (this.listeners[ev] ||= []).push(fn); }
+
+  // Efecto de sonido que se oye menos cuanto más lejos está del jugador
+  sound(name, pos, vol = 1) {
+    if (this.opts.silent) return;
+    const p = this.player;
+    if (pos && p) vol *= Math.max(0, 1 - dist2(p.pos, pos) / 40);
+    if (vol > 0.02) sfx(name, vol);
+  }
+  voice(u, moment) {
+    if (!this.opts.silent && u?.isPlayer) voice(`${u.heroId}_${moment}`);
+  }
   emit(ev, data) { (this.listeners[ev] || []).forEach((f) => f(data)); }
 
   // ------------------------------------------------------------------ creación
@@ -477,12 +489,16 @@ export class Game {
       for (const h of assists) { h.assists++; this.giveGold(h, CONST.assistGold); this.addXp(h, 80 + u.level * 15); }
       u.damagedBy.clear();
       this.emit('heroKilled', { victim: u, killer: credit || killer });
+      this.sound('heroe_muere', u.pos);
+      this.voice(u, 'morir');
+      this.voice(credit, 'matar');
       if (u.dragon) this.endDragon(u);
     } else if (u.kind === 'tower') {
       for (const h of this.heroes) if (h.team === enemyTeam) this.giveGold(h, CONST.towerGold);
       u.deathAnim = 0.001;
       this.fx.burst(u.pos, u.team === 'blue' ? 0xe8e4d8 : 0x3a2a40, 40, 8, 0.35, 1.2, 3);
       this.emit('towerDestroyed', { tower: u });
+      this.sound('torre_destruida', u.pos);
     } else {
       u.deathAnim = 0.001;
       this.fx.burst(u.pos, u.team === 'blue' ? 0x8fd0ff : 0xb06aff, 80, 12, 0.4, 1.6, 4);
@@ -495,7 +511,7 @@ export class Game {
   giveGold(h, g) {
     if (h.isBot && h.team === 'red') g *= this.diff.gold;
     h.gold += g;
-    if (h.isPlayer && g >= 10) this.floater(h, '+' + Math.round(g) + ' 🪙', '#ffd700');
+    if (h.isPlayer && g >= 10) { this.floater(h, '+' + Math.round(g) + ' 🪙', '#ffd700'); this.sound('oro', null, 0.4); }
   }
 
   addXp(u, amt) {
@@ -508,7 +524,7 @@ export class Game {
       this.recalc(u);
       this.fx.ring(u.pos, 2.2, 0xffe08a, 0.8, { grow: true });
       this.fx.burst(u.pos, 0xffe08a, 14, 3, 0.12, 0.8, 2);
-      if (u.isPlayer) this.emit('levelUp', { unit: u });
+      if (u.isPlayer) { this.emit('levelUp', { unit: u }); this.sound('subir_nivel', null, 0.7); }
       if (u.isBot || this.opts.autoLevel) this.autoLevel(u);
     }
   }
@@ -558,6 +574,7 @@ export class Game {
     }
     u.gold -= it.cost;
     this.recalc(u);
+    if (u.isPlayer) this.sound('comprar', null, 0.7);
     return null;
   }
 
@@ -576,6 +593,7 @@ export class Game {
     if (this.getBuff(u, 'potion')) return;
     u.potions--;
     this.addBuff(u, 'hot', 10, 16, { key: 'potion' });
+    if (u.isPlayer) this.sound('pocion', null, 0.7);
     this.fx.burst(u.pos, 0xff5a7a, 8, 1.5, 0.1, 0.6, 1.5);
   }
 
@@ -603,6 +621,11 @@ export class Game {
     a.maxCd = cd;
     PASSIVE_IMPL[u.heroId]?.onCast?.(this, u, i);
     this.castFlourish(u, i, a.def);
+    this.sound(`${u.heroId}_${a.def.key.toLowerCase()}`, u.pos);
+    if (i === 3) {
+      this.voice(u, 'definitiva');
+      if (this.player && u.team !== this.player.team) this.sound('aviso', null, 0.6);
+    }
     return true;
   }
 
@@ -687,6 +710,7 @@ export class Game {
         if (Math.random() < 0.5) this.fx.spark(u.pos.clone().setY(1.2), 0xff4a6a, 0.1, 0.5, 1.5);
       }
       if (crit) {
+        this.sound('critico', t.pos, 0.8);
         this.fx.impact(t.pos, 0xffe070, 0.8);
         if (u.isPlayer) this.shake(0.12);
       }
@@ -694,7 +718,14 @@ export class Game {
 
     const isStructure = ['tower', 'nexus', 'boss'].includes(u.kind);
     const ranged = u.base.range > 4 || this.getBuff(u, 'jos_q') || (bonusMagic > 0 && d > 3);
+    if (u.kind === 'hero') {
+      const ranged0 = u.base.range > 4;
+      const snd = !ranged0 ? (u.heroId === 'fotsor' ? 'golpe_puno' : 'golpe_espada')
+        : u.heroId === 'astrid' ? 'disparo_arma_fuego' : u.heroId === 'kouji' ? 'disparo_flecha' : 'disparo_magia';
+      this.sound(snd, u.pos, 0.45);
+    }
     if (isStructure) {
+      this.sound('torre_dispara', u.pos, 0.6);
       const from = u.pos.clone(); from.y = u.model.extra?.gemY ?? 6;
       const col = u.team === 'blue' ? 0x8fd0ff : u.kind === 'boss' ? 0xb06aff : 0xff3a5a;
       this.spawnHoming(u, t, from, col, 0.45, 24, () => {
@@ -1140,7 +1171,7 @@ export class Game {
     h.order = null;
     for (const a of h.abilities) a.cd = Math.min(a.cd, 3);
     this.fx.ring(h.pos, 2.5, 0x8fd0ff, 0.8, { grow: true });
-    if (h.isPlayer) this.emit('message', { text: '¡Has reaparecido!', kind: 'info' });
+    if (h.isPlayer) { this.emit('message', { text: '¡Has reaparecido!', kind: 'info' }); this.sound('reaparecer', null, 0.7); }
   }
 
   // ------------------------------------------------------------------ render
@@ -1156,7 +1187,10 @@ export class Game {
           if (u.model.glb) {
             // los modelos animados tienen su propia animación de muerte
             animateModel(u.model, t + u.id, false, 0, 1, true);
-            if (u.deathAnim > 2.2) { g.visible = false; u.deathAnim = 0; }
+            if (u.deathAnim > 2.2) {
+              if (u.kind === 'minion') { this.scene.remove(g); this.units.splice(i, 1); }
+              else { g.visible = false; u.deathAnim = 0; }
+            }
           } else if (u.kind === 'hero' || u.kind === 'minion') {
             g.rotation.x = Math.min(Math.PI / 2, u.deathAnim * 4) * -1;
             g.position.y = -Math.max(0, u.deathAnim - 0.6) * 2;
@@ -1187,6 +1221,7 @@ export class Game {
         if (u.kind === 'minion' && u.type === 'ranged' && u.team === 'red') g.position.y = 0.35 + Math.sin(t * 3 + u.id) * 0.12;
         if (u.dragon) g.position.y = 0.4 + Math.sin(t * 3) * 0.15;
       }
+      else if (u.model.glb) animateModel(u.model, t + u.id, false, u.attackAnim); // estructuras animadas
       if (u.ringMesh) {
         u.ringMesh.visible = true;
         u.ringMesh.position.set(u.pos.x, 0.05, u.pos.z);

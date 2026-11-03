@@ -118,7 +118,7 @@ Son guías basadas en el lore; el diseño final tiene que ser original.
 
 ### Efectos comunes
 
-`golpe_espada`, `golpe_puño`, `disparo_flecha`, `disparo_magia`, `disparo_arma_fuego`, `critico`, `torre_dispara`, `torre_destruida`, `heroe_muere`, `subir_nivel`, `oro`, `comprar`, `pocion`, `reaparecer`, `lorik_raices`, `lorik_invoca`, `aviso` (una definitiva enemiga), `clic` (interfaz).
+`golpe_espada`, `golpe_puno` (puñetazo; sin eñe en el nombre del archivo), `disparo_flecha`, `disparo_magia`, `disparo_arma_fuego`, `critico`, `torre_dispara`, `torre_destruida`, `heroe_muere`, `subir_nivel`, `oro`, `comprar`, `pocion`, `reaparecer`, `lorik_raices`, `lorik_invoca`, `aviso` (una definitiva enemiga), `clic` (interfaz).
 
 ### Efectos de habilidades (40)
 

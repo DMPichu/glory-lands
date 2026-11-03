@@ -182,3 +182,11 @@ body:has(#deadScreen[style*="flex"]) #view { filter: grayscale(0.85) brightness(
   #bottom { transform: translateX(-50%) scale(0.75); transform-origin: bottom center; }
   #stats { display: none; }
 }
+
+/* iconos de habilidades (game-icons.net) y tokens de personajes */
+.aicon { width: 70%; height: 70%; object-fit: contain; filter: drop-shadow(0 0 5px var(--hc)) drop-shadow(0 0 1px var(--hc)); }
+.heroDetail .k .aicon, #heroDetail .k .aicon { width: 26px; height: 26px; }
+#portrait, .cport, .tport { position: relative; overflow: hidden; }
+.tok { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+#teamsRed .tok { filter: saturate(0.55) brightness(0.72) sepia(0.25) hue-rotate(-25deg); }
+.iicon { width: 80%; height: 80%; object-fit: contain; }

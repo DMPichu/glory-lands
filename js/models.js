@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-import { MAP, LANES, LAYOUT } from './config.js';
+import { MAP, LANES, LAYOUT, MODEL_GLB } from './config.js';
 import { distToLanes, laneLength, lanePoint } from './map.js';
 
 // --- Cachés para no duplicar geometrías y materiales ---------------------------
@@ -788,6 +788,9 @@ export function buildHeroModel(id, corrupted, glb) {
 // queda el modelo básico.
 const loader = new GLTFLoader();
 const glbCache = new Map();
+// modelos que han cargado bien (para la autoprueba)
+export const loadedGLB = new Set();
+export const failedGLB = new Map();
 
 function loadGLB(spec) {
   if (!glbCache.has(spec.url)) {
@@ -847,11 +850,16 @@ function upgradeToGLB(m, spec, corrupted) {
       part.position.fromArray(a.pos ?? [0, 0, 0]).divideScalar(bs.x);
       part.scale.setScalar((a.scale ?? 1) / bs.x);
     }
-    m.parts.body.visible = false;
+    // se esconde el modelo básico (los héroes y súbditos tienen 'body'; las
+    // estructuras no, así que se esconden todas sus piezas)
+    if (m.parts?.body) m.parts.body.visible = false;
+    else for (const c of m.group.children) if (!spec.keep?.some((a) => m.extra?.[a.part] === c)) c.visible = false;
+    if (m.extra) m.extra.crystal = null;
     m.group.add(root);
     m.glb = { root, mixer, actions, current: null, lastT: null, prevAttack: 0, spec };
     play(m.glb, 'idle', 0);
-  }).catch((e) => console.warn('No se pudo cargar el modelo', spec.url, e));
+    loadedGLB.add(spec.url);
+  }).catch((e) => { failedGLB.set(spec.url, String(e?.message || e)); console.warn('No se pudo cargar el modelo', spec.url, e); });
 }
 
 function play(g, state, fade = 0.2) {
@@ -884,14 +892,17 @@ function animateGLB(m, t, moving, attackT, dead) {
 }
 
 export function buildMinionModel(team, type) {
-  if (team === 'blue') return type === 'melee' ? buildBlueMelee() : buildBlueRanged();
-  return type === 'melee' ? buildRedMelee() : buildRedRanged();
+  const m = team === 'blue' ? (type === 'melee' ? buildBlueMelee() : buildBlueRanged()) : (type === 'melee' ? buildRedMelee() : buildRedRanged());
+  const spec = MODEL_GLB[`minion_${team}_${type}`];
+  if (spec) upgradeToGLB(m, spec, false);
+  return m;
 }
 
 export function buildStructureModel(team, kind) {
-  if (kind === 'tower') return team === 'blue' ? buildBlueTower() : buildRedTower();
-  if (kind === 'nexus') return buildBlueNexus();
-  return buildLorik();
+  const m = kind === 'tower' ? (team === 'blue' ? buildBlueTower() : buildRedTower()) : kind === 'nexus' ? buildBlueNexus() : buildLorik();
+  const spec = MODEL_GLB[kind === 'tower' ? `tower_${team}` : kind];
+  if (spec) upgradeToGLB(m, spec, false);
+  return m;
 }
 
 // Versión "corrompida" de un héroe: tonos oscuros y violáceos con brillo rojo.

@@ -422,6 +422,20 @@ export const DIFFICULTY = {
   dificil: { name: 'Difícil', dmg: 1.15, think: 0.14, gold: 1.2 },
 };
 
+// Modelos .glb opcionales para todo lo que no es un héroe (los de los héroes van en
+// el campo 'glb' de cada uno). Mismo formato que el 'glb' de Fotsor; null = modelo
+// hecho con formas básicas. Ver models/LEEME.md.
+export const MODEL_GLB = {
+  minion_blue_melee: null,   // guardia de la Orden (anims: idle, walk, attack, death)
+  minion_blue_ranged: null,  // clérigo de la Orden
+  minion_red_melee: null,    // cultista
+  minion_red_ranged: null,   // ángel corrompido
+  tower_blue: null,          // torre de los Blood Hawks (sin animaciones)
+  tower_red: null,           // obelisco de la Legión
+  nexus: null,               // Torre de Zugri
+  boss: null,                // Lorik sobre su santuario (anims opcionales)
+};
+
 export const HERO_ORDER = ['josephine', 'fotsor', 'yeslie', 'astrid', 'kouji', 'grimdarkus', 'ikaruus', 'crixus', 'legna', 'catarina'];
 
 // ---------------------------------------------------------------------------

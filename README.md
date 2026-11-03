@@ -75,6 +75,20 @@ Cada héroe puede usar un modelo 3D animado en vez del hecho con formas básicas
 
 Mientras carga (o si falla la carga), el héroe usa su modelo básico. El de ejemplo es **RobotExpressive** (CC0, de Tomás Laulhé), que se carga desde el repositorio de three.js. Para un esqueleto de verdad, sirven los paquetes gratuitos (CC0) de **KayKit** o de **Quaternius**. Si generas un modelo propio con IA (Meshy, Tripo…), puedes animarlo con **Mixamo**.
 
+## Personalizar el juego
+
+El juego carga solo lo que encuentre en estas carpetas; si falta algo, usa lo de siempre:
+
+- `tokens/` y `img/retratos/`: retratos de los héroes (menú, interfaz, minimapa).
+- `img/habilidades/` (ya incluye 50 iconos de game-icons.net) e `img/objetos/`.
+- `audio/musica/`, `audio/efectos/`, `audio/voz/`: música, efectos y voces.
+- `models/`: modelos 3D animados (`.glb`), que se conectan en `js/config.js`.
+- `_entrada/`: para subir material sin ordenar y que Claude lo coloque.
+
+Cada carpeta tiene un `LEEME.md` con los requisitos. Lo que falta conseguir está en `REQUISITOS.md`; las instrucciones para Claude, en `CLAUDE.md`; los autores, en `CREDITOS.md`.
+
+Para comprobar que todo funciona, abre el juego con `?selftest=1`: en unos segundos muestra un informe con lo que encontró y si las habilidades y una partida simulada van bien.
+
 ## Notas
 
 - Todos los modelos y diseños son originales: solo se inspiran en las descripciones de `GloryLands_MOBA/`.

@@ -3,6 +3,9 @@ import * as THREE from 'three';
 import { HEROES, HERO_ORDER } from './config.js';
 import { Game } from './game.js';
 import { UI } from './ui.js';
+import { abilityIcon, portrait } from './art.js';
+import { unlock, playMusic, setMuted, sfx, voice } from './audio.js';
+import { runSelftest } from './selftest.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -37,20 +40,20 @@ function buildMenu() {
     el.className = 'card' + (id === selected ? ' sel' : '');
     el.style.setProperty('--hc', h.color);
     el.innerHTML = `
-      <div class="cport">${h.name[0]}</div>
+      <div class="cport">${portrait(h)}</div>
       <div class="cname">${h.name}</div>
       <div class="ctitle">${h.title}</div>
       <div class="crole">${h.role}</div>
       <div class="cquote">${h.quote}</div>`;
-    el.onclick = () => { selected = id; buildMenu(); };
+    el.onclick = () => { selected = id; sfx('clic', 0.5); voice(`${id}_elegir`); buildMenu(); };
     cards.appendChild(el);
   }
   const h = HEROES[selected];
   $('heroDetail').innerHTML = `
     <h3 style="color:${h.color}">${h.name} <span>· ${h.role}</span></h3>
     <p class="lore">${h.lore}</p>
-    <div class="ab"><span class="k">${h.passive.icon}</span><div><b>${h.passive.name}</b> <i>(pasiva)</i><br>${h.passive.desc}</div></div>
-    ${h.abilities.map((a) => `<div class="ab"><span class="k">${a.key}</span><div><b>${a.icon} ${a.name}</b><br>${a.desc}</div></div>`).join('')}`;
+    <div class="ab"><span class="k">${abilityIcon(h.passive.id, h.passive.icon, h.color)}</span><div><b>${h.passive.name}</b> <i>(pasiva)</i><br>${h.passive.desc}</div></div>
+    ${h.abilities.map((a) => `<div class="ab"><span class="k">${abilityIcon(a.id, a.icon, h.color)}</span><div><b>${a.key} · ${a.name}</b><br>${a.desc}</div></div>`).join('')}`;
   document.querySelectorAll('.modeBtn[data-mode]').forEach((b) => b.classList.toggle('sel', b.dataset.mode === mode));
   document.querySelectorAll('.diffBtn').forEach((b) => b.classList.toggle('sel', b.dataset.diff === difficulty));
 }
@@ -64,6 +67,7 @@ $('resumeBtn').onclick = () => togglePause(false);
 
 function backToMenu() {
   if (game) { game.paused = true; game = null; }
+  playMusic('menu');
   $('end').style.display = 'none';
   $('pause').style.display = 'none';
   $('hud').style.display = 'none';
@@ -94,6 +98,8 @@ function start() {
     requestAnimationFrame(frame);
   }
   game = new Game({ heroId: selected, mode, difficulty, autoLevel: $('autoLevel').checked, auto: params.get('auto') === '1' });
+  playMusic('batalla');
+  game.on('coreExposed', ({ core }) => { if (core.kind === 'boss') playMusic('lorik'); });
   ui = new UI(game);
   ui.onAbilityClick = (i) => castAt(i);
   window.__game = game;
@@ -240,6 +246,7 @@ function frame(now) {
 
 function showEnd() {
   const win = game.over === 'victory';
+  playMusic(win ? 'victoria' : 'derrota', false);
   $('end').style.display = 'flex';
   $('endTitle').textContent = win ? '¡VICTORIA!' : 'DERROTA';
   $('endTitle').className = win ? 'win' : 'lose';
@@ -255,5 +262,34 @@ function showEnd() {
     <div>Duración: <b>${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}</b></div>`;
 }
 
-buildMenu();
-if (params.get('hero')) start();
+// ------------------------------------------------------------------ sonido
+// el audio solo puede empezar tras la primera interacción
+const firstTouch = () => {
+  unlock();
+  if ($('menu').style.display !== 'none') playMusic('menu');
+  window.removeEventListener('pointerdown', firstTouch);
+  window.removeEventListener('keydown', firstTouch);
+};
+window.addEventListener('pointerdown', firstTouch);
+window.addEventListener('keydown', firstTouch);
+const soundOpt = $('soundOpt');
+setMuted(params.get('mute') === '1' || !soundOpt.checked);
+soundOpt.onchange = () => setMuted(!soundOpt.checked);
+
+// ------------------------------------------------------------------ autoprueba (?selftest=1)
+if (params.get('selftest') === '1') {
+  $('menu').style.display = 'none';
+  const out = document.createElement('pre');
+  out.id = 'selftest';
+  out.style.cssText = 'position:fixed;inset:0;margin:0;padding:16px;overflow:auto;background:#12101a;color:#e8e2f4;font:13px/1.45 monospace;z-index:99;white-space:pre-wrap';
+  out.textContent = 'Autoprueba en marcha…';
+  document.body.appendChild(out);
+  document.title = 'SELFTEST RUNNING';
+  const minutes = Math.max(1, Math.min(20, Number(params.get('minutes')) || 4));
+  runSelftest((o) => new Game({ heroId: selected, difficulty: 'normal', silent: true, autoLevel: true, ...o }), minutes)
+    .then((r) => { out.textContent = JSON.stringify(r, null, 2); document.title = r.ok ? 'SELFTEST OK' : 'SELFTEST FAIL'; window.__selftest = r; })
+    .catch((e) => { out.textContent = 'SELFTEST FAIL: ' + e.stack; document.title = 'SELFTEST FAIL'; });
+} else {
+  buildMenu();
+  if (params.get('hero')) start();
+}

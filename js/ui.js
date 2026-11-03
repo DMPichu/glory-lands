@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { HEROES, ITEMS, SHOP_ORDER, LAYOUT, CONST, MAP, LANES, xpToNext } from './config.js';
 import { riverX } from './models.js';
+import { abilityIcon, itemIcon, portrait, tokenImage, drawToken } from './art.js';
 
 const $ = (id) => document.getElementById(id);
 const V = new THREE.Vector3();
@@ -44,7 +45,7 @@ export class UI {
   buildHud() {
     const p = this.g.player;
     const def = p.def;
-    $('portrait').textContent = def.name[0];
+    $('portrait').innerHTML = portrait(def);
     $('portrait').style.background = `radial-gradient(circle at 35% 30%, ${def.color}, #1a1626 80%)`;
     $('heroName').textContent = def.name;
     const abil = $('abilities');
@@ -52,13 +53,13 @@ export class UI {
     // pasiva
     const pas = document.createElement('div');
     pas.className = 'ability passive';
-    pas.innerHTML = `<div class="icon">${def.passive.icon}</div>`;
+    pas.innerHTML = `<div class="icon">${abilityIcon(def.passive.id, def.passive.icon, def.color)}</div>`;
     pas.dataset.tip = `<b>${def.passive.name}</b> <i>(pasiva)</i><br>${def.passive.desc}`;
     abil.appendChild(pas);
     this.abEls = def.abilities.map((a, i) => {
       const el = document.createElement('div');
       el.className = 'ability';
-      el.innerHTML = `<div class="icon">${a.icon}</div><div class="cd"></div><div class="cdtext"></div><div class="key">${a.key}</div>
+      el.innerHTML = `<div class="icon">${abilityIcon(a.id, a.icon, def.color)}</div><div class="cd"></div><div class="cdtext"></div><div class="key">${a.key}</div>
         <div class="pips">${'<i></i>'.repeat(i === 3 ? 3 : 5)}</div><button class="lvl" title="Mejorar">+</button><div class="cost"></div>`;
       el.dataset.tip = `<b>${a.name}</b> [${a.key}]<br>${a.desc}<br><span class="dim">Maná: ${a.cost.join('/')} · Recarga: ${a.cd.join('/')} s</span>`;
       el.querySelector('.lvl').addEventListener('mousedown', (ev) => {
@@ -97,7 +98,7 @@ export class UI {
       const tp = $(h.team === 'blue' ? 'teams' : 'teamsRed');
       const el = document.createElement('div');
       el.className = 'tmember ' + h.team + (h.isPlayer ? ' me' : '');
-      el.innerHTML = `<div class="tport" style="background:radial-gradient(circle at 35% 30%, ${h.def.color}, #1a1626 80%)">${h.def.name[0]}<span class="tlvl"></span><span class="tdead"></span></div>
+      el.innerHTML = `<div class="tport" style="background:radial-gradient(circle at 35% 30%, ${h.def.color}, #1a1626 80%)">${portrait(h.def)}<span class="tlvl"></span><span class="tdead"></span></div>
         <div class="tinfo"><div class="tname">${h.name}</div><div class="tbar"><i></i></div><div class="tkda"></div></div>`;
       tp.appendChild(el);
       return el;
@@ -131,7 +132,7 @@ export class UI {
       }
       const el = document.createElement('div');
       el.className = 'shopItem';
-      el.innerHTML = `<div class="sicon">${it.icon}</div><div class="sinfo"><b>${it.name}</b><span>${it.desc}</span></div><div class="scost">${it.cost} 🪙</div>`;
+      el.innerHTML = `<div class="sicon">${itemIcon(id, it.icon)}</div><div class="sinfo"><b>${it.name}</b><span>${it.desc}</span></div><div class="scost">${it.cost} 🪙</div>`;
       el.onclick = () => {
         const r = this.g.buy(this.g.player, id);
         if (r) this.message(r, 'warn');
@@ -208,7 +209,7 @@ export class UI {
     // objetos
     this.itemEls.forEach((el, i) => {
       const id = p.items[i];
-      el.textContent = id ? ITEMS[id].icon : '';
+      if (el.dataset.id !== (id || '')) { el.innerHTML = id ? itemIcon(id, ITEMS[id].icon) : ''; el.dataset.id = id || ''; }
       el.classList.toggle('empty', !id);
     });
     $('potionCount').textContent = p.potions;
@@ -302,6 +303,8 @@ export class UI {
         c.strokeText(u.name, s.x, y - 6);
         c.fillStyle = ally ? '#d8ecff' : '#ffd8dc';
         c.fillText(u.name, s.x, y - 6);
+        const tok = tokenImage(u.heroId);
+        if (tok) drawToken(c, tok, x - 30, y + 5, 13, col);
         // estados
         const st = [];
         if (g.hasBuff(u, 'stun')) st.push('❄️');
@@ -331,6 +334,8 @@ export class UI {
         c.textAlign = 'center';
         c.strokeStyle = 'rgba(0,0,0,0.8)'; c.lineWidth = 3;
         const label = u.name + (u.protected ? ' 🔒' : '');
+        const btok = u.kind === 'boss' ? tokenImage('lorik') : null;
+        if (btok) drawToken(c, btok, sy.x, sy.y - 40, 22, '#b06aff');
         c.strokeText(label, sy.x, sy.y - 6);
         c.fillStyle = '#fff';
         c.fillText(label, sy.x, sy.y - 6);
@@ -410,7 +415,10 @@ export class UI {
     }
     for (const h of g.heroes) {
       if (!h.alive) continue;
-      c.fillStyle = h.isPlayer ? '#5dff7a' : h.team === 'blue' ? '#4aa3ff' : '#ff4a5a';
+      const col = h.isPlayer ? '#5dff7a' : h.team === 'blue' ? '#4aa3ff' : '#ff4a5a';
+      const tok = tokenImage(h.heroId);
+      if (tok) { drawToken(c, tok, sx(h.pos.x), sz(h.pos.z), h.isPlayer ? 9 : 7.5, col); continue; }
+      c.fillStyle = col;
       c.beginPath(); c.arc(sx(h.pos.x), sz(h.pos.z), h.isPlayer ? 6 : 5, 0, 7); c.fill();
       c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.stroke();
     }

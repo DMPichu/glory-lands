@@ -372,11 +372,13 @@ function bossAbilities(g, s, dt) {
         g.dealDamage(s, e, 140 + g.time * 0.15, 'magic');
       }
       g.fx.burst(c, 0x8a2aff, 30, 3, 0.15, 0.8, 3);
+      g.sound('lorik_raices', c);
     });
   }
   if (!s.protected && st.summonCd <= 0 && heroes.length) {
     st.summonCd = 18;
     g.summonAngels(s, 2);
+    g.sound('lorik_invoca', s.pos);
     g.emit('message', { text: 'Lorik invoca ángeles corrompidos', kind: 'danger' });
   }
 }
