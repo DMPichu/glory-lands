@@ -166,35 +166,71 @@ def ice(d=0.7):
     return mix(glass, crack(0.08) * 0.8, at(shimmer(d, 6000, 11000, 0.3), 0.02))[:n]
 
 
+def saw(f, d):
+    tt = t(d)
+    return 2 * ((tt * f) % 1) - 1
+
+
+def pad(freqs, d=1.2, cutoff=1800, attack=0.25):
+    """Acorde cálido (sierras desafinadas y filtradas) que entra suave: luz y curación sin campanas."""
+    n = int(SR * d)
+    s = np.zeros(n)
+    for f in freqs:
+        for det in (0.996, 1.004):
+            s += saw(f * det, d)
+    s = lowpass(s / (len(freqs) * 2), cutoff)
+    e = np.minimum(1, np.arange(n) / (SR * attack)) * np.exp(-np.maximum(0, np.arange(n) / SR - attack) * 2.2 / d)
+    return s * e
+
+
+def horn(f, d=0.6):
+    """Cuerno grave: aviso sin campanilla."""
+    n = int(SR * d)
+    s = lowpass(saw(f, d) + 0.5 * saw(f * 1.5, d), 900)
+    return s * np.minimum(1, np.arange(n) / (SR * 0.06)) * np.exp(-np.arange(n) / SR * 3 / d)
+
+
+def coin(d=0.09, f=3200):
+    """Moneda: chasquido metálico muy corto."""
+    n = int(SR * d)
+    return (highpass(noise(d), 4000) * 0.6 + sine(f, d) * 0.4 + sine(f * 1.37, d) * 0.25) * env(n, 0.001, d * 0.25, 6)
+
+
+def rise(d=0.6, lo=200, hi=2400):
+    """Subida de ruido filtrado (energía que se carga)."""
+    return whoosh(d, lo, hi, True) * np.linspace(0.3, 1, int(SR * d))
+
+
 # ------------------------------------------------------------------ catálogo
 def make():
     S = {}
     # --- Josephine: luz sagrada
-    S['josephine_w'] = mix(chime_arp(784, [0, 4, 7, 12, 16], 0.06, 1.3), shimmer(1.4, 5000, 10000, 0.22), at(sine(392, 1.2) * env(int(SR * 1.2), 0.15, 0.8, 2) * 0.25, 0.0))
-    S['josephine_e'] = mix(whoosh(0.3, 400, 2500), at(thump(90, 0.4), 0.25), at(bell(1046, 0.8) * 0.5, 0.26), at(shimmer(0.6, 5000, 9000, 0.2), 0.26))
+    S['josephine_w'] = mix(pad([392, 494, 587, 784], 1.4, 2600, 0.2), rise(0.5, 600, 5000) * 0.35, at(shimmer(0.9, 6000, 11000, 0.12), 0.25))
+    S['josephine_e'] = mix(whoosh(0.3, 400, 2500), at(thump(90, 0.4), 0.25), at(pad([523, 659, 784], 0.7, 2200, 0.02) * 0.6, 0.26))
     # --- comunes
     S['golpe_puno'] = mix(thump(60, 0.25), crack(0.05, False) * 0.6)
-    S['subir_nivel'] = chime_arp(523, [0, 4, 7, 12], 0.09, 1.2)
-    S['oro'] = mix(bell(2093, 0.35, 1.3) * 0.6, at(bell(2637, 0.4, 1.3) * 0.5, 0.06))
-    S['comprar'] = mix(bell(1568, 0.3) * 0.5, at(bell(2093, 0.4) * 0.5, 0.07), at(crack(0.04) * 0.3, 0.0))
-    S['reaparecer'] = mix(chime_arp(392, [0, 7, 12, 19], 0.1, 1.4), shimmer(1.4, 3000, 8000, 0.2))
-    S['aviso'] = mix(bell(880, 0.5) * 0.6, at(bell(880, 0.5) * 0.5, 0.18))
+    S['subir_nivel'] = mix(rise(0.5, 300, 3000) * 0.6, at(pad([262, 330, 392, 523], 1.1, 2400, 0.08), 0.35))
+    S['oro'] = mix(coin(0.08, 3400) * 0.5, at(coin(0.07, 4100) * 0.35, 0.05))
+    S['comprar'] = mix(lowpass(noise(0.12), 900) * env(int(SR * 0.12), 0.002, 0.06, 5) * 0.8, at(coin(0.08, 3000), 0.06), at(coin(0.08, 3600) * 0.7, 0.1), at(coin(0.08, 2800) * 0.5, 0.15))
+    S['reaparecer'] = mix(rise(0.8, 200, 2500) * 0.6, at(pad([196, 294, 392], 1.2, 1800, 0.15), 0.5))
+    S['aviso'] = mix(horn(147, 0.45), at(horn(196, 0.6), 0.22))
     S['clic'] = crack(0.03) * 0.5 + sine(1800, 0.03) * env(int(SR * 0.03), 0.001, 0.01, 5) * 0.3
-    S['torre_dispara'] = mix(zap(1200, 300, 0.3) * 0.6, whoosh(0.3, 800, 3000) * 0.5)
+    S['torre_dispara'] = mix(sweep(160, 40, 0.45) * env(int(SR * 0.45), 0.002, 0.3, 4) * 0.9, crack(0.06, False) * 0.6, zap(700, 120, 0.35) * 0.4, whoosh(0.35, 1200, 300, False) * 0.5)
+    S['torre_impacto'] = mix(thump(48, 0.5), crack(0.12, False) * 0.8, at(lowpass(noise(0.4), 500) * env(int(SR * 0.4), 0.005, 0.25, 3) * 0.6, 0.02))
     S['lorik_raices'] = mix(lowpass(noise(0.8), 400) * env(int(SR * 0.8), 0.05, 0.5, 2), at(crack(0.15, False), 0.3), at(thump(50, 0.5), 0.3))
     S['lorik_invoca'] = mix(buzz(55, 1.2) * 0.6, sweep(200, 800, 1.2) * env(int(SR * 1.2), 0.3, 0.6, 2) * 0.3, shimmer(1.2, 2000, 5000, 0.2))
     # --- Fotsor: puños, tiempo y espectáculo
     S['fotsor_q'] = mix(whoosh(0.18, 600, 3000), at(thump(55, 0.35), 0.15), at(crack(0.06, False), 0.15))
     S['fotsor_w'] = mix(sweep(1200, 300, 0.7) * env(int(SR * 0.7), 0.01, 0.6, 2) * 0.4, delay(bell(660, 0.4) * 0.4, 0.09, 0.5, 4), whoosh(0.6, 3000, 400, False) * 0.5)
-    S['fotsor_e'] = mix(buzz(98, 0.6) * 0.5, chime_arp(392, [0, 3, 7], 0.05, 0.6) * 0.6, thump(80, 0.3))
+    S['fotsor_e'] = mix(buzz(98, 0.6) * 0.5, horn(131, 0.6) * 0.6, thump(80, 0.3))
     S['fotsor_r'] = mix(sweep(600, 80, 1.0) * env(int(SR * 1.0), 0.02, 0.8, 2) * 0.5, delay(bell(220, 1.2, 0.5) * 0.6, 0.2, 0.5, 3), at(fire(0.8), 0.9), at(thump(45, 0.6), 0.9))
     # --- Yeslie: cristal y arcano
     S['yeslie_q'] = mix(zap(2500, 900, 0.25) * 0.5, bell(1760, 0.35, 1.5) * 0.4, whoosh(0.25, 2000, 6000) * 0.4)
-    S['yeslie_w'] = mix(chime_arp(659, [0, 3, 7, 10], 0.04, 0.8) * 0.7, at(thump(80, 0.4), 0.38), at(shimmer(0.6, 3000, 8000, 0.25), 0.38))
+    S['yeslie_w'] = mix(zap(2200, 600, 0.4) * 0.4, rise(0.38, 800, 4000) * 0.4, at(thump(80, 0.4), 0.38), at(shimmer(0.6, 3000, 8000, 0.25), 0.38))
     S['yeslie_e'] = mix(whoosh(0.25, 3000, 8000) * 0.6, bell(2349, 0.5, 1.4) * 0.4, at(bell(3136, 0.5, 1.4) * 0.3, 0.05))
     S['yeslie_r'] = mix(lowpass(noise(1.4), 500) * env(int(SR * 1.4), 0.1, 1.0, 2) * 0.9, sweep(90, 45, 1.4) * env(int(SR * 1.4), 0.05, 1.0, 2) * 0.6, at(ice(0.8), 0.4))
     # --- Astrid
-    S['astrid_w'] = mix(bell(440, 0.4, 0.6) * 0.5, at(bell(440, 0.6, 0.6) * 0.5, 0.12), crack(0.05) * 0.4)
+    S['astrid_w'] = mix(horn(110, 0.5) * 0.7, crack(0.05) * 0.4)
     # --- Grimdarkus: tanque oscuro
     S['grimdarkus_q'] = mix(whoosh(0.2, 300, 1500), at(thump(45, 0.5), 0.15), at(crack(0.1, False) * 0.8, 0.15))
     S['grimdarkus_w'] = mix(buzz(65, 1.0) * 0.6, lowpass(noise(1.0), 300) * env(int(SR * 1.0), 0.2, 0.7, 2) * 0.6)
@@ -210,24 +246,24 @@ def make():
     S['catarina_e'] = mix(whoosh(0.3, 1000, 5000) * 0.7, at(ice(0.5) * 0.7, 0.2))
     S['catarina_r'] = mix(ice(1.4), at(crack(0.2) * 0.8, 0.1), at(thump(40, 0.8), 0.1), shimmer(1.4, 6000, 12000, 0.3))
     # --- Legna: luz y sol
-    S['legna_w'] = mix(chime_arp(587, [0, 5, 9], 0.06, 1.0), shimmer(1.0, 4000, 9000, 0.2))
-    S['legna_e'] = mix(bell(784, 1.0) * 0.6, at(bell(1175, 1.0) * 0.5, 0.08), whoosh(0.5, 1500, 5000) * 0.4)
+    S['legna_w'] = mix(pad([294, 370, 440, 587], 1.1, 2400, 0.15), rise(0.4, 800, 5000) * 0.3)
+    S['legna_e'] = mix(pad([392, 587, 784], 0.9, 3000, 0.05) * 0.8, whoosh(0.5, 1500, 5000) * 0.4)
     # --- Habilidades genéricas de los héroes nuevos (kit_<tipo>)
     S['kit_skillshot'] = mix(zap(1600, 500, 0.3) * 0.6, whoosh(0.3, 1500, 5000) * 0.5)
     S['kit_area'] = mix(sweep(300, 900, 0.4) * env(int(SR * 0.4), 0.2, 0.2, 2) * 0.3, at(thump(70, 0.5), 0.38), at(shimmer(0.5, 2500, 7000, 0.25), 0.38))
     S['kit_cone'] = mix(whoosh(0.22, 800, 4000), at(whoosh(0.2, 900, 4500) * 0.8, 0.15))
     S['kit_dash'] = mix(whoosh(0.35, 300, 2500), at(thump(65, 0.3), 0.28))
     S['kit_blink'] = mix(sweep(2000, 500, 0.25) * env(int(SR * 0.25), 0.002, 0.2, 3) * 0.4, at(sweep(500, 2000, 0.25) * env(int(SR * 0.25), 0.002, 0.2, 3) * 0.4, 0.12), shimmer(0.4, 4000, 9000, 0.2))
-    S['kit_buff'] = mix(chime_arp(440, [0, 4, 7], 0.05, 0.7) * 0.6, buzz(110, 0.5) * 0.25)
-    S['kit_shield'] = mix(bell(659, 0.8, 0.7) * 0.5, shimmer(0.8, 3000, 7000, 0.25), sweep(300, 600, 0.6) * env(int(SR * 0.6), 0.05, 0.4, 2) * 0.2)
-    S['kit_heal'] = mix(chime_arp(659, [0, 5, 9, 12], 0.06, 1.1), shimmer(1.1, 5000, 10000, 0.2))
+    S['kit_buff'] = mix(thump(70, 0.3), rise(0.45, 150, 1800) * 0.6, buzz(110, 0.5) * 0.25)
+    S['kit_shield'] = mix(sweep(120, 240, 0.7) * env(int(SR * 0.7), 0.05, 0.5, 2) * 0.6, lowpass(noise(0.7), 1200) * env(int(SR * 0.7), 0.08, 0.4, 2) * 0.5, shimmer(0.7, 2500, 6000, 0.15))
+    S['kit_heal'] = mix(pad([330, 415, 494, 659], 1.1, 2200, 0.2), rise(0.5, 500, 4000) * 0.3)
     S['kit_nova'] = mix(thump(55, 0.5), whoosh(0.5, 400, 3000) * 0.7, at(crack(0.08, False) * 0.6, 0.02))
     S['kit_stealth'] = mix(whoosh(0.5, 3000, 300, False) * 0.6, sweep(800, 200, 0.5) * env(int(SR * 0.5), 0.01, 0.4, 2) * 0.2)
     S['kit_execute'] = mix(whoosh(0.2, 1000, 6000), at(crack(0.12) * 0.9, 0.18), at(thump(45, 0.6), 0.18), at(bell(1318, 0.8, 1.2) * 0.4, 0.2))
     S['kit_prison'] = mix(zap(900, 2400, 0.3) * 0.5, buzz(147, 0.9) * 0.4, at(bell(880, 0.8, 1.3) * 0.4, 0.1))
     # --- Jungla
     S['monstruo_epico'] = mix(buzz(41, 1.4) * 0.6, lowpass(noise(1.4), 250) * env(int(SR * 1.4), 0.3, 1.0, 2), sweep(80, 160, 1.4) * env(int(SR * 1.4), 0.4, 0.8, 2) * 0.4)
-    S['bendicion'] = mix(chime_arp(698, [0, 4, 7, 11, 14], 0.05, 1.0) * 0.8, shimmer(1.0, 5000, 10000, 0.2))
+    S['bendicion'] = mix(pad([349, 440, 523, 698], 1.2, 2600, 0.15), rise(0.6, 300, 3500) * 0.4)
     return S
 
 
@@ -257,7 +293,7 @@ if __name__ == '__main__':
         dest = os.path.join(OUT, name + '.ogg')
         if nombres and name not in nombres:
             continue
-        if not nombres and not todos and os.path.exists(dest) and name != 'josephine_w':
+        if not nombres and not todos and os.path.exists(dest):
             continue
         write(name, x)
         print('creado', name, f'{len(x) / SR:.2f} s', f'{os.path.getsize(dest) // 1024} KB')
