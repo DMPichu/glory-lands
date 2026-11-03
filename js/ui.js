@@ -39,8 +39,8 @@ export class UI {
       this.message(ours ? `¡Han destruido nuestra ${tower.name}!` : `¡${tower.name} destruido!`, ours ? 'danger' : 'good');
     });
     game.on('coreExposed', ({ core }) => {
-      if (core.team === this.g.player.team) this.message('¡La Torre de Zugri ha quedado expuesta! ¡Defiéndela!', 'danger');
-      else this.message('¡Lorik ya es vulnerable! Ve a por él.', 'good');
+      if (core.team === this.g.player.team) this.message('¡El Santuario ha quedado expuesto! ¡Defiéndelo!', 'danger');
+      else this.message('¡El Altar ya es vulnerable! Ve a por él.', 'good');
     });
   }
 
@@ -122,36 +122,143 @@ export class UI {
     tip.style.top = Math.max(8, ev.clientY - h - 18) + 'px';
   }
 
+  // ---------------------------------------------------------------- tienda
   buildShop() {
-    const list = $('shopList');
-    list.innerHTML = '';
-    let cat = null;
-    for (const id of SHOP_ORDER) {
-      const it = ITEMS[id];
-      if (it.cat && it.cat !== cat) {
-        cat = it.cat;
-        const h = document.createElement('div');
-        h.className = 'shopCat';
-        h.textContent = cat;
-        list.appendChild(h);
-      }
-      const el = document.createElement('div');
-      el.className = 'shopItem';
-      el.innerHTML = `<div class="sicon">${itemIcon(id, it.icon)}</div><div class="sinfo"><b>${it.name}</b><span>${it.desc}</span></div><div class="scost">${it.cost} 🪙</div>`;
-      el.onclick = () => {
-        const r = this.g.buy(this.g.player, id);
-        if (r) this.message(r, 'warn');
-        else this.message(`Comprado: ${it.name}`, 'good');
-      };
-      el.dataset.id = id;
-      list.appendChild(el);
+    const def = this.g.player.def;
+    // recomendados: la compra habitual del héroe, en orden, más las pociones
+    this.shopRec = [...new Set(['potion', ...(def.build || [])])];
+    this.shopTab = 'rec';
+    this.shopSel = this.shopRec.find((id) => id !== 'potion') || SHOP_ORDER[0];
+    this.shopSellIdx = -1;
+    const cats = ['rec', 'all', ...new Set(SHOP_ORDER.map((id) => ITEMS[id].cat).filter(Boolean))];
+    const names = { rec: '⭐ Recomendados', all: 'Todos' };
+    const icons = { Ataque: '⚔️', Magia: '✨', Defensa: '🛡️', Utilidad: '👢', Consumibles: '🧪' };
+    const tabs = $('shopTabs');
+    tabs.innerHTML = '';
+    for (const c of cats) {
+      const b = document.createElement('button');
+      b.className = 'stab';
+      b.dataset.tab = c;
+      b.textContent = names[c] || `${icons[c] || ''} ${c}`.trim();
+      b.onclick = () => { this.shopTab = c; this.renderShopGrid(); };
+      tabs.appendChild(b);
     }
     $('shopClose').onclick = () => this.toggleShop(false);
+    this.renderShopGrid();
+    this.renderShopDetail();
+  }
+
+  shopBuy(id) {
+    const it = ITEMS[id];
+    const r = this.g.buy(this.g.player, id);
+    if (r) this.message(r, 'warn');
+    else { this.message(`Comprado: ${it.name}`, 'good'); this.g.sound?.('comprar', null, 0.6); }
+    this.shopKey = null;
+  }
+
+  renderShopGrid() {
+    const ids = this.shopTab === 'rec' ? this.shopRec : this.shopTab === 'all' ? SHOP_ORDER : SHOP_ORDER.filter((id) => ITEMS[id].cat === this.shopTab);
+    document.querySelectorAll('.stab').forEach((b) => b.classList.toggle('sel', b.dataset.tab === this.shopTab));
+    const grid = $('shopGrid');
+    grid.innerHTML = '';
+    for (const id of ids) {
+      const it = ITEMS[id];
+      const el = document.createElement('div');
+      el.className = 'scard';
+      el.dataset.id = id;
+      el.innerHTML = `${this.shopRec.includes(id) && this.shopTab !== 'rec' ? '<span class="srec" title="Recomendado">⭐</span>' : ''}<span class="sown"></span>
+        <div class="sic">${itemIcon(id, it.icon)}</div><div class="sn">${it.name}</div><div class="sc">${it.cost} 🪙</div>`;
+      el.onclick = () => { this.shopSel = id; this.shopSellIdx = -1; this.renderShopDetail(); };
+      el.ondblclick = () => this.shopBuy(id);
+      el.oncontextmenu = (e) => { e.preventDefault(); this.shopSel = id; this.shopSellIdx = -1; this.shopBuy(id); this.renderShopDetail(); };
+      grid.appendChild(el);
+    }
+    this.shopKey = null;
+  }
+
+  statLines(stats = {}) {
+    const L = { ad: 'Daño de ataque', ap: 'Poder mágico', hp: 'Vida', mp: 'Maná', armor: 'Armadura', mr: 'Resistencia mágica', as: 'Velocidad de ataque',
+      speed: 'Velocidad de movimiento', cdr: 'Reducción de enfriamiento', crit: 'Probabilidad de crítico', lifesteal: 'Robo de vida', onhit: 'Daño mágico al golpear',
+      arpen: 'Penetración de armadura', mpen: 'Penetración mágica', thorns: 'Devuelve daño (espinas)', healpow: 'Curaciones y escudos', hpRegen: 'Regeneración de vida' };
+    const pct = new Set(['as', 'cdr', 'crit', 'lifesteal', 'arpen', 'mpen', 'thorns', 'healpow']);
+    return Object.entries(stats).map(([k, v]) => `<div class="sdStat"><span>${L[k] || k}</span><b>+${pct.has(k) ? Math.round(v * 100) + ' %' : v}</b></div>`).join('');
+  }
+
+  renderShopDetail() {
+    const g = this.g, p = g.player, el = $('shopDetail');
+    const selling = this.shopSellIdx >= 0 && p.items[this.shopSellIdx];
+    const id = selling ? p.items[this.shopSellIdx] : this.shopSel;
+    const it = ITEMS[id];
+    if (!it) { el.innerHTML = '<div class="sdEmpty">Elige un objeto para ver sus detalles</div>'; return; }
+    const inShop = g.inShop(p);
+    const owned = it.consumable ? p.potions : p.items.filter((x) => x === id).length;
+    let action;
+    if (selling) {
+      action = `<button class="sdSell" id="sdSell">Vender por ${Math.floor(it.cost * 0.6)} 🪙</button>`;
+    } else {
+      const full = !it.consumable && p.items.length >= CONST.maxItems;
+      const why = !inShop ? 'Solo en tu base' : full ? 'Inventario lleno' : p.gold < it.cost ? `Te faltan ${Math.ceil(it.cost - p.gold)} 🪙` : '';
+      action = `<button class="sdBuy" id="sdBuy" ${why ? 'disabled' : ''}>${why || `Comprar · ${it.cost} 🪙`}</button>`;
+    }
+    el.innerHTML = `<div class="sdTop"><div class="sdIcon">${itemIcon(id, it.icon)}</div>
+        <div><div class="sdName">${it.name}</div><div class="sdCat">${it.cat || ''}${owned ? ` · tienes ${owned}` : ''}</div></div></div>
+      <div class="sdStats">${this.statLines(it.stats)}</div>
+      <div class="sdDesc">${it.desc}</div>${action}`;
+    $('sdBuy')?.addEventListener('click', () => { this.shopBuy(id); this.renderShopDetail(); });
+    $('sdSell')?.addEventListener('click', () => {
+      const r = g.sell(p, this.shopSellIdx);
+      if (r) this.message(r, 'warn'); else this.message(`Vendido: ${it.name}`, 'info');
+      this.shopSellIdx = -1; this.shopKey = null; this.renderShopDetail();
+    });
+    this.detailKey = `${id}|${selling}|${inShop}|${Math.floor(p.gold)}|${p.items.length}|${p.potions}`;
+  }
+
+  updateShop() {
+    const g = this.g, p = g.player;
+    const inShop = g.inShop(p);
+    $('shopGold').textContent = Math.floor(p.gold);
+    $('shopWarn').style.display = inShop ? 'none' : 'block';
+    const key = `${Math.floor(p.gold / 10)}|${p.items.join(',')}|${p.potions}|${inShop}|${this.shopSel}|${this.shopSellIdx}`;
+    if (key === this.shopKey) return;
+    this.shopKey = key;
+    // siguiente objeto recomendado que aún no tiene (se resalta en verde si le llega el oro)
+    const next = this.shopRec.find((id) => id !== 'potion' && !p.items.includes(id));
+    document.querySelectorAll('.scard').forEach((el) => {
+      const id = el.dataset.id, it = ITEMS[id];
+      const owned = it.consumable ? p.potions : p.items.filter((x) => x === id).length;
+      el.classList.toggle('cant', p.gold < it.cost || !inShop);
+      el.classList.toggle('sel', id === this.shopSel && this.shopSellIdx < 0);
+      el.classList.toggle('next', id === next && p.gold >= it.cost && inShop);
+      const o = el.querySelector('.sown');
+      o.textContent = owned ? '×' + owned : '';
+      o.style.display = owned ? 'block' : 'none';
+    });
+    const inv = $('shopInv');
+    inv.innerHTML = '';
+    for (let i = 0; i < CONST.maxItems; i++) {
+      const id = p.items[i];
+      const d = document.createElement('div');
+      d.className = 'sinv' + (id ? ' full' : '') + (i === this.shopSellIdx ? ' sel' : '');
+      d.innerHTML = id ? itemIcon(id, ITEMS[id].icon) : '';
+      d.title = id ? `${ITEMS[id].name} (clic para vender)` : 'Hueco libre';
+      if (id) d.onclick = () => { this.shopSellIdx = i; this.shopKey = null; this.renderShopDetail(); };
+      inv.appendChild(d);
+    }
+    const pot = document.createElement('div');
+    pot.className = 'sinv' + (p.potions ? ' full' : '');
+    pot.innerHTML = `${itemIcon('potion', ITEMS.potion.icon)}<span>${p.potions}</span>`;
+    pot.title = 'Pociones (tecla 1)';
+    pot.onclick = () => { this.shopSel = 'potion'; this.shopSellIdx = -1; this.shopKey = null; this.renderShopDetail(); };
+    inv.appendChild(pot);
+    $('shopInvCount').textContent = `${p.items.length} / ${CONST.maxItems}`;
+    const dk = `${this.shopSellIdx >= 0 ? p.items[this.shopSellIdx] : this.shopSel}|${this.shopSellIdx >= 0 && !!p.items[this.shopSellIdx]}|${inShop}|${Math.floor(p.gold)}|${p.items.length}|${p.potions}`;
+    if (dk !== this.detailKey) this.renderShopDetail();
   }
 
   toggleShop(v) {
     this.shopOpen = v ?? !this.shopOpen;
     $('shop').style.display = this.shopOpen ? 'flex' : 'none';
+    if (this.shopOpen) { this.shopKey = null; this.shopSellIdx = -1; this.updateShop(); this.renderShopDetail(); }
   }
 
   message(text, kind = 'info') {
@@ -224,14 +331,8 @@ export class UI {
 
     // tienda: resaltar lo que se puede comprar
     const inShop = g.inShop(p);
-    $('shopWarn').style.display = inShop ? 'none' : 'block';
     $('shopBtn').classList.toggle('glow', inShop && p.gold >= 600);
-    if (this.shopOpen) {
-      document.querySelectorAll('.shopItem').forEach((el) => {
-        el.classList.toggle('cant', p.gold < ITEMS[el.dataset.id].cost || !inShop);
-      });
-      $('shopGold').textContent = Math.floor(p.gold);
-    }
+    if (this.shopOpen) this.updateShop();
 
     // tiempo y marcador
     const t = Math.floor(g.time);
@@ -365,8 +466,6 @@ export class UI {
         c.textAlign = 'center';
         c.strokeStyle = 'rgba(0,0,0,0.8)'; c.lineWidth = 3;
         const label = u.name + (u.protected ? ' 🔒' : '');
-        const btok = u.kind === 'boss' ? tokenImage('lorik') : null;
-        if (btok) drawToken(c, btok, sy.x, sy.y - 40, 22, '#b06aff');
         c.strokeText(label, sy.x, sy.y - 6);
         c.fillStyle = '#fff';
         c.fillText(label, sy.x, sy.y - 6);

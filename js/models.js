@@ -471,7 +471,7 @@ function buildBlueNexus() {
 }
 
 function buildLorik() {
-  // Santuario corrompido + Lorik flotando encima
+  // El Altar de la Legión: santuario corrompido con un cristal flotando encima
   const g = new THREE.Group();
   const obs = mat(0x1a1420, { r: 0.4, m: 0.3, flat: true });
   const violet = mat(0x8a2aff, { e: 0x5a10c0, ei: 1.6 });
@@ -486,38 +486,25 @@ function buildLorik() {
   }
   g.add(at(torus(3.0, 0.08, violet), 0, 1.65, 0, Math.PI / 2));
 
-  const lorik = new THREE.Group();
-  const goldA = mat(0xd9a520, { m: 0.9, r: 0.25 });
-  const darkGold = mat(0x7a5a10, { m: 0.9, r: 0.3 });
-  const gem = mat(0x3a7aff, { e: 0x1a4aff, ei: 2 });
-  const h = humanoid({ skin: mat(0x3a2a3a), legs: darkGold, torso: goldA, arms: goldA, boots: darkGold, scale: 1.9,
-    eyeMat: mat(0x9a5aff, { e: 0x7a2aff, ei: 2.5 }) });
-  const p = h.parts;
-  p.body.add(at(cyl(0.3, 0.55, 0.9, darkGold, 12), 0, 0.75, 0));
-  p.body.add(at(oct(0.12, gem), 0, 1.35, 0.3));
-  p.body.add(at(sph(0.18, goldA, 10), -0.42, 1.6, 0));
-  p.body.add(at(sph(0.18, goldA, 10), 0.42, 1.6, 0));
-  p.head.add(at(cone(0.24, 0.5, goldA, 8), 0, 0.3, 0));
-  p.head.add(at(oct(0.06, gem), 0, 0.12, 0.2));
-  // alas metálicas
-  const wingM = mat(0xc9a03a, { m: 0.9, r: 0.3, side: THREE.DoubleSide });
-  for (const s of [-1, 1]) {
-    for (let i = 0; i < 4; i++) {
-      const f = box(0.12, 1.3 - i * 0.18, 0.04, wingM);
-      at(f, s * (0.35 + i * 0.25), 1.75 + i * 0.12, -0.3, 0, 0, -s * (0.6 + i * 0.25));
-      p.body.add(f);
-    }
+  // el Altar: escalones de obsidiana, púas y un gran cristal corrupto flotando
+  const crimson = mat(0xff2a4a, { e: 0xff0030, ei: 1.8, flat: true });
+  g.add(at(cyl(1.9, 2.3, 0.7, obs, 6), 0, 1.95, 0));
+  g.add(at(cyl(1.3, 1.7, 0.6, obs, 6), 0, 2.6, 0));
+  g.add(at(cyl(1.35, 1.35, 0.08, crimson, 6), 0, 2.92, 0));
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+    g.add(at(cone(0.35, 3.2 + (i % 2) * 1.2, obs, 5), Math.cos(a) * 2.1, 3.4, Math.sin(a) * 2.1, Math.sin(a) * 0.25, 0, -Math.cos(a) * 0.25));
+    g.add(at(oct(0.22, i % 2 ? violet : crimson), Math.cos(a) * 2.1, 5.3 + (i % 2) * 1.2, Math.sin(a) * 2.1));
   }
-  // báculo druídico corrompido
-  const staff = new THREE.Group();
-  staff.add(at(cyl(0.04, 0.05, 1.8, mat(0x2a1a2a), 6), 0, 0.5, 0));
-  staff.add(at(oct(0.16, violet), 0, 1.45, 0));
-  at(staff, 0, 0, 0.05, Math.PI / 2.6, 0, 0);
-  p.handR.add(staff);
-  lorik.add(h.group);
-  at(lorik, 0, 1.6, 0);
-  lorik.rotation.y = -Math.PI / 2; // mira hacia el equipo azul
-  g.add(lorik);
+  const crystal = new THREE.Group();
+  const core = oct(1.0, mat(0x2a0a20, { e: 0xa0103a, ei: 1.2, flat: true, m: 0.3, r: 0.2 }));
+  core.scale.set(1, 1.8, 1);
+  crystal.add(core);
+  const shell = oct(1.25, mat(0xff3a6a, { e: 0xff1050, ei: 0.8, flat: true, op: 0.35 }));
+  shell.scale.set(1, 1.8, 1);
+  crystal.add(shell);
+  at(crystal, 0, 6.2, 0);
+  g.add(crystal);
   // rayos a su alrededor
   const bolts = new THREE.Group();
   const boltMat = new THREE.LineBasicMaterial({ color: 0x9ab8ff });
@@ -530,7 +517,7 @@ function buildLorik() {
     bolts.add(l);
   }
   g.add(bolts);
-  return { group: g, parts: h.parts, extra: { lorik, bolts, gemY: 6.5, crystal: null } };
+  return { group: g, parts: {}, extra: { bolts, gemY: 6.2, crystal } };
 }
 
 function buildKouji() {

@@ -104,8 +104,8 @@ function start() {
   ui.onAbilityClick = (i) => selectAbility(i);
   ui.onAbilityHover = (i) => { aim.hover = i; };
   window.__game = game;
-  ui.message(`¡Bienvenida a Glory Lands! Destruye las torres y derrota a Lorik.`, 'info');
-  ui.message('Clic izquierdo para moverte y atacar · Q W E R elige una habilidad y clic derecho donde quieres que golpee', 'info');
+  ui.message(`¡Bienvenida a Glory Lands! Derriba los obeliscos y destruye el Altar de la Legión.`, 'info');
+  ui.message('Clic derecho para moverte y atacar · Q W E R elige una habilidad y clic izquierdo donde quieres que golpee', 'info');
 }
 
 function resize() {
@@ -160,13 +160,12 @@ function castAt(i) {
 const view = $('view');
 view.addEventListener('mousedown', (e) => {
   if (!game || game.paused) return;
-  // con una habilidad seleccionada, el clic elige dónde golpea (como en LoL)
-  if (aim.idx >= 0) {
-    if (e.button === 2 || e.button === 0) { const i = aim.idx; aim.idx = -1; castAt(i); }
-    return;
-  }
-  // clic izquierdo: moverse y atacar (mantenerlo pulsado sigue al cursor)
-  if (e.button === 0) {
+  // como en LoL: con una habilidad elegida, el clic izquierdo la lanza donde está
+  // el cursor; el clic derecho la cancela y mueve/ataca
+  if (aim.idx >= 0 && e.button === 0) { const i = aim.idx; aim.idx = -1; castAt(i); return; }
+  if (e.button === 2) aim.idx = -1;
+  // clic derecho: moverse y atacar (mantenerlo pulsado sigue al cursor)
+  if (e.button === 2) {
     mouse.held = true;
     mouse.repeatT = 0.18;
     command();
@@ -324,8 +323,8 @@ function showEnd() {
   $('endTitle').textContent = win ? '¡VICTORIA!' : 'DERROTA';
   $('endTitle').className = win ? 'win' : 'lose';
   $('endText').textContent = win
-    ? 'Lorik ha caído. Los Blood Hawks protegen Glory Lands un día más.'
-    : 'La Torre de Zugri ha caído ante la Legión de Lorik...';
+    ? 'El Altar de la Legión ha caído. Los Blood Hawks protegen Glory Lands un día más.'
+    : 'El Santuario ha caído ante la Legión de Lorik...';
   const p = game.player;
   const t = Math.floor(game.time);
   $('endStats').innerHTML = `

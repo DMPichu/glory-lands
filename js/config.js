@@ -476,8 +476,8 @@ export const MODEL_GLB = {
   minion_red_ranged: kaykit('skeleton_mage', ['Skeleton_Mage_Hat'], 'Spellcast_Shoot', { height: 1.6, tint: { Skeleton_Mage_Hat: solid(0x5a1a80), Skeleton_Mage_Eyes: glow(0xd040ff, 2) } }),
   tower_blue: null,          // torre de los Blood Hawks (sin animaciones)
   tower_red: null,           // obelisco de la Legión
-  nexus: null,               // Torre de Zugri
-  boss: null,                // Lorik sobre su santuario (anims opcionales)
+  nexus: null,               // Santuario (base de los Blood Hawks)
+  boss: null,                // Altar (base de la Legión)
 };
 
 for (const [id, spec] of Object.entries(HERO_MODELS)) HEROES[id].glb = spec;

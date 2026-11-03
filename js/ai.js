@@ -1,4 +1,4 @@
-// Inteligencia artificial: héroes bot, súbditos y estructuras (torres y Lorik).
+// Inteligencia artificial: héroes bot, súbditos y estructuras (torres, Santuario y Altar).
 import * as THREE from 'three';
 import { HEROES, ITEMS, LAYOUT, TEAMS, CONST } from './config.js';
 import { dist2 } from './game.js';
@@ -416,6 +416,6 @@ function bossAbilities(g, s, dt) {
     st.summonCd = 18;
     g.summonAngels(s, 2);
     g.sound('lorik_invoca', s.pos);
-    g.emit('message', { text: 'Lorik invoca ángeles corrompidos', kind: 'danger' });
+    g.emit('message', { text: 'El Altar invoca ángeles corrompidos', kind: 'danger' });
   }
 }
