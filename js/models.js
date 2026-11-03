@@ -6,7 +6,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { MAP, LANES, LAYOUT, MODEL_GLB, CAMPS, EPIC_CAMPS, HEROES } from './config.js';
 import { distToLanes, laneLength, lanePoint } from './map.js';
-import { HERO_BUILDERS_V2, buildFromLook } from './heroes.js';
+import { HERO_BUILDERS_V2, buildFromLook, stylize } from './heroes.js';
 
 // --- Cachés para no duplicar geometrías y materiales ---------------------------
 const geoCache = new Map();
@@ -767,6 +767,7 @@ export function buildHeroModel(id, corrupted, glb) {
   // modelos de estilo anime (js/heroes.js); los antiguos quedan de respaldo
   const look = HEROES[id]?.look;
   const m = HERO_BUILDERS_V2[id] ? HERO_BUILDERS_V2[id]() : look ? buildFromLook(look) : HERO_BUILDERS[id]();
+  if (HERO_BUILDERS_V2[id] || look) stylize(m.group);
   if (corrupted) corrupt(m.group);
   if (glb) upgradeToGLB(m, glb, corrupted);
   return m;
@@ -964,7 +965,7 @@ const corruptCache = new Map();
 const VOID = new THREE.Color(0x3a1050);
 export function corrupt(group) {
   group.traverse((o) => {
-    if (!o.isMesh || !o.material || !o.material.isMeshStandardMaterial) return;
+    if (!o.isMesh || !o.material || !(o.material.isMeshStandardMaterial || o.material.isMeshToonMaterial)) return;
     const src = o.material;
     if (!corruptCache.has(src)) {
       const m = src.clone();

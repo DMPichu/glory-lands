@@ -26,6 +26,42 @@ const oct = (r) => geo(`o${r}`, () => new THREE.OctahedronGeometry(r));
 const capSph = (r, t0, t1, p0 = 0, p1 = Math.PI * 2) => geo(`cap${r},${t0},${t1},${p0},${p1}`, () => new THREE.SphereGeometry(r, 24, 14, p0, p1, t0, t1));
 const DS = THREE.DoubleSide;
 const sc = (o, x, y, z) => { o.scale.set(x, y, z); return o; };
+// Extremidad redondeada (cápsula que se estrecha): r0 arriba, r1 abajo
+const limb = (r0, r1, len) => geo(`limb${r0},${r1},${len}`, () => {
+  const pts = [];
+  for (let i = 0; i <= 5; i++) { const a = -Math.PI / 2 + (i / 5) * (Math.PI / 2); pts.push(new THREE.Vector2(r1 * Math.cos(a) + 1e-4, -len / 2 + r1 * Math.sin(a))); }
+  for (let i = 0; i <= 5; i++) { const a = (i / 5) * (Math.PI / 2); pts.push(new THREE.Vector2(r0 * Math.cos(a) + 1e-4, len / 2 + r0 * Math.sin(a))); }
+  return new THREE.LatheGeometry(pts, 14);
+});
+// Torso con cadera, cintura, pecho y hombros (más marcado en las chicas)
+const torsoGeo = (female) => geo(`torso${female}`, () => {
+  const prof = female
+    ? [[0.2, -0.33], [0.2, -0.24], [0.155, -0.1], [0.165, 0.02], [0.195, 0.12], [0.2, 0.2], [0.16, 0.28], [0.06, 0.31]]
+    : [[0.2, -0.33], [0.205, -0.22], [0.185, -0.1], [0.2, 0.02], [0.235, 0.14], [0.24, 0.22], [0.19, 0.29], [0.07, 0.32]];
+  const g = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 22);
+  g.scale(1, 1, 0.78);
+  return g;
+});
+// Mechón de pelo: base redonda y punta fina (sustituye a los conos; misma orientación)
+const lock = (r, len) => geo(`lock${r},${len}`, () => {
+  const pts = [];
+  for (let i = 0; i <= 12; i++) {
+    const t = i / 12;
+    const rr = r * 1.15 * Math.sin(Math.min(1, t / 0.2) * Math.PI / 2) * Math.pow(1 - t, 0.8);
+    pts.push(new THREE.Vector2(Math.max(1e-4, rr), -len / 2 + t * len));
+  }
+  return new THREE.LatheGeometry(pts, 10);
+});
+// Melena: cortina que baja desde la nuca y acaba en punta suave
+const mane = (width, len) => geo(`mane${width},${len}`, () => {
+  const pts = [], L = len + 0.22;
+  for (let i = 0; i <= 14; i++) {
+    const t = i / 14;
+    const rr = width * (t < 0.3 ? Math.sin((t / 0.3) * Math.PI / 2) : 1 - 0.12 * (t - 0.3));
+    pts.push(new THREE.Vector2(Math.max(1e-4, rr), -len / 2 - 0.22 + t * L));
+  }
+  return new THREE.LatheGeometry(pts, 18);
+});
 
 // Capa curvada (se dobla hacia atrás) para capas, abrigos y cortinas de pelo
 function capeGeo(w, h, bend = 0.3, flare = 0.3) {
@@ -165,8 +201,8 @@ function figure(o) {
   // piernas (pivote en la cadera)
   const leg = (sx) => {
     const p = new THREE.Group(); p.position.set(sx * 0.12 * slim, 1.0, 0);
-    p.add(m(cyl(0.1 * slim, 0.075, 0.5), pants, 0, -0.25, 0));
-    p.add(m(cyl(0.075, 0.06, 0.42), o.bareLegs ? skin : pants, 0, -0.7, 0));
+    p.add(m(limb(0.1 * slim, 0.078, 0.4), pants, 0, -0.25, 0));
+    p.add(m(limb(0.076, 0.058, 0.34), o.bareLegs ? skin : pants, 0, -0.68, 0));
     p.add(m(cyl(0.08, 0.09, 0.26), boots, 0, -0.86, 0));
     p.add(sc(m(sph(0.09, 10), boots, 0, -0.96, 0.06), 1, 0.55, 1.5));
     return p;
@@ -175,7 +211,7 @@ function figure(o) {
   body.add(legL, legR);
   // cadera, torso y cuello
   body.add(m(cyl(0.19 * slim, 0.21 * slim, 0.18), pants, 0, 1.02, 0));
-  const torso = m(cyl(0.24 * slim, 0.18 * slim, 0.5), top, 0, 1.33, 0);
+  const torso = m(torsoGeo(!!o.female), top, 0, 1.33, 0);
   body.add(torso);
   if (o.female) body.add(sc(m(sph(0.13, 12), top, 0, 1.43, 0.08), 1.4, 0.75, 0.8));
   body.add(m(sph(0.11, 10), sleeves, -0.26 * slim, 1.55, 0));
@@ -184,8 +220,8 @@ function figure(o) {
   // brazos (pivote en el hombro)
   const arm = (sx) => {
     const p = new THREE.Group(); p.position.set(sx * 0.28 * slim, 1.56, 0);
-    p.add(m(cyl(0.068, 0.058, 0.36), sleeves, 0, -0.18, 0));
-    p.add(m(cyl(0.058, 0.048, 0.32), o.bareArms ? skin : sleeves, 0, -0.5, 0));
+    p.add(m(limb(0.068, 0.057, 0.28), sleeves, 0, -0.18, 0));
+    p.add(m(limb(0.057, 0.046, 0.25), o.bareArms ? skin : sleeves, 0, -0.5, 0));
     p.add(m(sph(0.06, 10), hands, 0, -0.68, 0.01));
     const hand = new THREE.Group(); hand.position.set(0, -0.69, 0); p.add(hand);
     return [p, hand];
@@ -193,7 +229,7 @@ function figure(o) {
   const [armL, handL] = arm(-1), [armR, handR] = arm(1);
   body.add(armL, armR);
   // cabeza: cráneo, mentón, orejas y cara pintada
-  const head = new THREE.Group(); head.position.set(0, 1.9, 0);
+  const head = new THREE.Group(); head.position.set(0, 1.93, 0); head.scale.setScalar(1.12);
   if (!o.noFace) {
     head.add(m(headGeo(), skin, 0, 0, 0));
     const earG = o.elf ? cone(0.05, 0.2, 6) : sph(0.05, 8);
@@ -275,18 +311,15 @@ function bangs(head, hm, n = 9, len = 0.18) {
 }
 // Melena larga por detrás (lisa) y mechones laterales
 function longHair(head, hm, len = 0.8, width = 0.27) {
-  const g = m(cyl(width * 0.9, width, len, 16), hm, 0, -len / 2 + 0.05, -0.1);
-  g.scale.set(1, 1, 0.45);
-  head.add(g);
-  head.add(sc(m(cone(width * 0.9, 0.25, 16), hm, 0, -len + 0.06, -0.1, Math.PI), 1, 1, 0.45));
+  head.add(sc(m(mane(width, len), hm, 0, -len / 2 + 0.05, -0.1), 1, 1, 0.45));
 }
 function sideLocks(head, hm, len = 0.45) {
-  for (const s of [-1, 1]) head.add(m(cone(0.06, len, 6), hm, s * 0.2, -len / 2 + 0.06, 0.07, Math.PI, 0, s * 0.08));
+  for (const s of [-1, 1]) head.add(m(lock(0.06, len), hm, s * 0.2, -len / 2 + 0.06, 0.07, Math.PI, 0, s * 0.08));
 }
 function spikes(head, hm, n = 9, len = 0.22) {
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
-    head.add(m(cone(0.07, len, 6), hm, Math.cos(a) * 0.15, 0.18, Math.sin(a) * 0.15 - 0.03, Math.sin(a) * 0.9 - 0.2, 0, -Math.cos(a) * 0.9));
+    head.add(m(lock(0.07, len), hm, Math.cos(a) * 0.15, 0.18, Math.sin(a) * 0.15 - 0.03, Math.sin(a) * 0.9 - 0.2, 0, -Math.cos(a) * 0.9));
   }
 }
 // Cuernos curvos (de carnero) a los lados de la cabeza
@@ -310,7 +343,7 @@ function sword(bladeM, guardM, len = 1.0, w = 0.07) {
   g.add(m(box(0.3, 0.05, 0.06), guardM, 0, 0.09, 0));
   g.add(m(cyl(0.025, 0.025, 0.18), mat(0x3a2a20), 0, -0.02, 0));
   g.add(m(sph(0.035, 8), guardM, 0, -0.12, 0));
-  g.rotation.x = Math.PI / 2;
+  g.rotation.x = Math.PI / 2 - 0.55;
   g.position.set(0, -0.02, 0.05);
   return { g, blade };
 }
@@ -437,8 +470,8 @@ function buildYeslie() {
   hairCap(p.head, hair); bangs(p.head, hair, 7, 0.17); longHair(p.head, hair, 1.0, 0.3);
   // ondas de pelo blanco a los lados
   for (const s of [-1, 1]) {
-    p.head.add(m(cone(0.075, 0.7, 8), hair, s * 0.21, -0.3, 0.02, Math.PI, 0, s * 0.12));
-    p.head.add(m(cone(0.06, 0.55, 8), hair, s * 0.25, -0.28, -0.08, Math.PI - 0.15, 0, s * 0.25));
+    p.head.add(m(lock(0.075, 0.7), hair, s * 0.21, -0.3, 0.02, Math.PI, 0, s * 0.12));
+    p.head.add(m(lock(0.06, 0.55), hair, s * 0.25, -0.28, -0.08, Math.PI - 0.15, 0, s * 0.25));
   }
   // cuernos curvos morados con reflejos turquesa
   ramHorns(p.head, mat(0x4a2a7a, { r: 0.35, m: 0.2 }), mat(0x3ad8e8, { e: 0x18a8c0, ei: 0.6 }), 1.0);
@@ -505,8 +538,8 @@ function buildKouji() {
   hairCap(p.head, hair);
   // raya al medio con mechones largos que caen a los lados
   for (const s of [-1, 1]) {
-    p.head.add(m(cone(0.07, 0.5, 6), hair, s * 0.19, -0.12, 0.06, Math.PI, 0, s * 0.12));
-    p.head.add(m(cone(0.05, 0.22, 6), hair, s * 0.09, 0.1, 0.2, Math.PI - 0.5, 0, s * 0.5));
+    p.head.add(m(lock(0.07, 0.5), hair, s * 0.19, -0.12, 0.06, Math.PI, 0, s * 0.12));
+    p.head.add(m(lock(0.05, 0.22), hair, s * 0.09, 0.1, 0.2, Math.PI - 0.5, 0, s * 0.5));
   }
   longHair(p.head, hair, 0.55, 0.24);
   // moño con cinta dorada
@@ -545,7 +578,7 @@ function buildGrimdarkus() {
   hairCap(p.head, hair); bangs(p.head, hair, 7, 0.2, 0.42);
   longHair(p.head, hair, 1.0, 0.32);
   // melena voluminosa con mechones de punta hacia atrás
-  for (let i = 0; i < 7; i++) p.head.add(m(cone(0.08, 0.5, 6), hair, -0.18 + i * 0.06, -0.05, -0.2, 1.2 + (i % 2) * 0.2, 0, (i - 3) * 0.12));
+  for (let i = 0; i < 7; i++) p.head.add(m(lock(0.08, 0.5), hair, -0.18 + i * 0.06, -0.05, -0.2, 1.2 + (i % 2) * 0.2, 0, (i - 3) * 0.12));
   sideLocks(p.head, hair, 0.55);
   // grandes cuernos de carnero
   ramHorns(p.head, mat(0x5a3a28, { r: 0.6 }), mat(0x3a2418), 1.6);
@@ -598,7 +631,7 @@ function buildIkaruus() {
   sideLocks(p.head, hair, 0.6);
   for (let i = 0; i < 9; i++) {
     const t = i / 8 - 0.5;
-    p.head.add(m(cone(0.08, 0.7, 6), i % 2 ? hair : hairD, t * 0.46, -0.25 - Math.abs(t) * 0.1, -0.2 - (1 - Math.abs(t)) * 0.05, 0.25 + Math.abs(t) * 0.3, 0, t * 0.5 + Math.PI));
+    p.head.add(m(lock(0.08, 0.7), i % 2 ? hair : hairD, t * 0.46, -0.25 - Math.abs(t) * 0.1, -0.2 - (1 - Math.abs(t)) * 0.05, 0.25 + Math.abs(t) * 0.3, 0, t * 0.5 + Math.PI));
   }
   // sombrero de paja (kasa), más pequeño
   const straw = mat(0xa8865a, { r: 0.9 });
@@ -656,7 +689,7 @@ function buildLegna() {
   // pelo de punta con un mechón verde a la derecha (como en su token)
   for (let i = 0; i < 9; i++) {
     const t = i / 8 - 0.5;
-    p.head.add(m(cone(0.07, 0.26, 6), i >= 7 ? green : hair, t * 0.4, 0.22, -0.02 - Math.abs(t) * 0.1, -0.35, 0, -t * 1.4));
+    p.head.add(m(lock(0.07, 0.26), i >= 7 ? green : hair, t * 0.4, 0.22, -0.02 - Math.abs(t) * 0.1, -0.35, 0, -t * 1.4));
   }
   bangs(p.head, hair, 5, 0.18, 0.3);
   p.head.add(m(cone(0.06, 0.24, 6), green, 0.15, 0.1, 0.14, Math.PI - 0.4, 0, -0.5));
@@ -719,6 +752,50 @@ function buildCatarina() {
   return { ...f, extra: { sword: sw.g } };
 }
 
+// ------------------------------------------------------------------ estilo anime
+// Sombreado por bandas (toon) y contorno oscuro (casco invertido) para todos los
+// héroes. Los metales reciben un poco de brillo propio para que no queden apagados.
+const TOON_STEPS = (() => {
+  const t = new THREE.DataTexture(new Uint8Array([110, 185, 255]), 3, 1, THREE.RedFormat);
+  t.minFilter = t.magFilter = THREE.NearestFilter; t.needsUpdate = true;
+  return t;
+})();
+const toonCache = new Map();
+function toonOf(src) {
+  if (!src.isMeshStandardMaterial) return src;
+  if (!toonCache.has(src)) {
+    toonCache.set(src, new THREE.MeshToonMaterial({
+      color: src.color, map: src.map, gradientMap: TOON_STEPS,
+      emissive: src.metalness > 0.5 && src.emissive.getHex() === 0 ? src.color.clone().multiplyScalar(0.25) : src.emissive,
+      emissiveIntensity: src.emissiveIntensity, emissiveMap: src.emissiveMap,
+      transparent: src.transparent, opacity: src.opacity, side: src.side, alphaTest: src.alphaTest, depthWrite: src.depthWrite,
+    }));
+  }
+  return toonCache.get(src);
+}
+const OUTLINE = new THREE.MeshBasicMaterial({ color: 0x140e1c, side: THREE.BackSide });
+OUTLINE.onBeforeCompile = (sh) => {
+  sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  transformed += normal * 0.014;');
+};
+const tmpV = new THREE.Vector3();
+export function stylize(group) {
+  const meshes = [];
+  group.traverse((o) => { if (o.isMesh) meshes.push(o); });
+  group.updateMatrixWorld(true);
+  for (const o of meshes) {
+    const src = o.material;
+    o.material = toonOf(src);
+    if (src.transparent || src.depthWrite === false) continue;
+    const g = o.geometry;
+    if (!g.boundingSphere) g.computeBoundingSphere();
+    o.getWorldScale(tmpV);
+    if (g.boundingSphere.radius * Math.max(tmpV.x, tmpV.y, tmpV.z) < 0.035) continue;
+    const ol = new THREE.Mesh(g, OUTLINE);
+    ol.castShadow = false; ol.raycast = () => {};
+    o.add(ol);
+  }
+}
+
 // ------------------------------------------------------------------ héroes nuevos
 // Modelo a partir de una descripción ('look' en js/roster.js) sacada del token de
 // cada héroe: colores, especie (león, gato), orejas, peinado, tocado, detalles y arma.
@@ -764,7 +841,7 @@ export function buildFromLook(L) {
       H.add(sc(m(sph(0.3, 16), mane, 0, -0.02, -0.08), 1.15, 1.2, 0.8));
       for (let i = 0; i < 14; i++) {
         const a = (i / 14) * Math.PI * 2;
-        H.add(m(cone(0.08, 0.26, 6), mane, Math.cos(a) * 0.27, Math.sin(a) * 0.27 - 0.02, -0.06, 0, 0, a - Math.PI / 2));
+        H.add(m(lock(0.1, 0.3), mane, Math.cos(a) * 0.27, Math.sin(a) * 0.27 - 0.02, -0.06, 0, 0, a - Math.PI / 2));
       }
       p.body.add(sc(m(sph(0.2, 12), mane, 0, 1.62, 0.04), 1.3, 0.8, 1));
     }
@@ -781,11 +858,11 @@ export function buildFromLook(L) {
     const has = (k) => st.includes(k);
     if (!has('spiky') && !has('slick')) bangs(H, hair, 9, 0.16);
     if (has('long') || has('wild')) { longHair(H, hair, 0.95, 0.29); sideLocks(H, hair, 0.5); }
-    if (has('wild')) for (let i = 0; i < 7; i++) H.add(m(cone(0.08, 0.45, 6), hair, -0.18 + i * 0.06, 0.05, -0.18, 1.0 + (i % 2) * 0.3, 0, (i - 3) * 0.15));
-    if (has('ponytail')) { H.add(m(sph(0.07, 10), hair, 0, 0.16, -0.22)); H.add(m(cone(0.09, 0.75, 8), hair, 0, -0.22, -0.3, Math.PI - 0.25)); }
+    if (has('wild')) for (let i = 0; i < 7; i++) H.add(m(lock(0.08, 0.45), hair, -0.18 + i * 0.06, 0.05, -0.18, 1.0 + (i % 2) * 0.3, 0, (i - 3) * 0.15));
+    if (has('ponytail')) { H.add(m(sph(0.07, 10), hair, 0, 0.16, -0.22)); H.add(m(lock(0.1, 0.75), hair, 0, -0.22, -0.3, Math.PI - 0.25)); }
     if (has('twin')) {
       const tie = L.tie != null ? mat(L.tie) : accent;
-      for (const sx of [-1, 1]) { H.add(m(sph(0.065, 10), tie, sx * 0.2, 0.14, -0.08)); H.add(m(cone(0.08, 0.7, 8), hair, sx * 0.26, -0.22, -0.1, Math.PI, 0, sx * 0.15)); }
+      for (const sx of [-1, 1]) { H.add(m(sph(0.065, 10), tie, sx * 0.2, 0.14, -0.08)); H.add(m(lock(0.085, 0.7), hair, sx * 0.26, -0.22, -0.1, Math.PI, 0, sx * 0.15)); }
     }
     if (has('bun')) { H.add(m(sph(0.1, 12), hair, 0, 0.25, -0.1)); H.add(m(tor(0.07, 0.018, Math.PI * 2, 6), accent, 0, 0.21, -0.09, Math.PI / 2 - 0.4)); }
     if (has('spiky')) spikes(H, hair, 11, 0.24);
