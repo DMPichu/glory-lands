@@ -586,18 +586,39 @@ export class Game {
     return !u.alive || this.nearFountain(u, u.team, CONST.shopRadius);
   }
 
+  // Precio real de un objeto: los componentes que ya tiene (a cualquier nivel de la
+  // receta) se gastan y descuentan su coste. Devuelve { cost, used: [ids] }.
+  recipeCost(u, id) {
+    const pool = [...u.items];
+    const used = [];
+    const walk = (iid, top) => {
+      if (!top) {
+        const k = pool.indexOf(iid);
+        if (k >= 0) { pool[k] = null; used.push(iid); return 0; }
+      }
+      const it = ITEMS[iid];
+      if (!it.from) return it.cost;
+      const fee = it.cost - it.from.reduce((a, c) => a + ITEMS[c].cost, 0);
+      return fee + it.from.reduce((a, c) => a + walk(c, false), 0);
+    };
+    return { cost: walk(id, true), used };
+  }
+
   buy(u, id) {
     const it = ITEMS[id];
     if (!it || !this.inShop(u)) return 'Solo puedes comprar en tu base.';
-    if (u.gold < it.cost) return 'No tienes oro suficiente.';
+    const { cost, used } = it.consumable ? { cost: it.cost, used: [] } : this.recipeCost(u, id);
+    if (u.gold < cost) return 'No tienes oro suficiente.';
     if (it.consumable) {
       if (u.potions >= 5) return 'Máximo 5 pociones.';
       u.potions++;
     } else {
-      if (u.items.length >= CONST.maxItems) return 'Inventario lleno (6 objetos).';
+      if (u.items.length - used.length >= CONST.maxItems) return `Inventario lleno (${CONST.maxItems} objetos).`;
+      for (const c of used) u.items.splice(u.items.indexOf(c), 1);
       u.items.push(id);
+      if (used.length && u.isPlayer) { this.fx.ring(u.pos, 2, 0xffd700, 0.7, { grow: true }); this.fx.burst(u.pos.clone().setY(1.2), 0xffd700, 18, 3, 0.12, 0.7, 2); }
     }
-    u.gold -= it.cost;
+    u.gold -= cost;
     this.recalc(u);
     if (u.isPlayer) this.sound('comprar', null, 0.7);
     return null;
@@ -794,7 +815,7 @@ export class Game {
       this.sound([`${u.heroId}_ataque`, snd], u.pos, 0.45);
     }
     if (isStructure) {
-      this.sound('torre_dispara', u.pos, 0.6);
+      this.sound('torre_dispara', u.pos, 0.75);
       const from = u.pos.clone(); from.y = u.model.extra?.gemY ?? 6;
       const col = u.team === 'blue' ? 0x8fd0ff : u.kind === 'boss' ? 0xb06aff : 0xff3a5a;
       this.spawnHoming(u, t, from, col, 0.45, 24, () => {
@@ -808,6 +829,10 @@ export class Game {
         }
         u.state.lastTarget = t;
         if (t.alive) this.dealDamage(u, t, dmg * mult, u.kind === 'boss' ? 'magic' : 'physical');
+        // impacto de torre: se oye y se ve con fuerza (más si es contra un héroe)
+        this.sound('torre_impacto', t.pos, t.kind === 'hero' ? 0.9 : 0.45);
+        this.fx.impact?.(t.pos, col, t.kind === 'hero' ? 1.2 : 0.7);
+        if (t.isPlayer) this.shake(0.18);
       });
     } else if (ranged) {
       const from = u.pos.clone(); from.y = 1.4;
@@ -1200,7 +1225,11 @@ export class Game {
     }
 
     // oro pasivo
-    if (this.time > CONST.firstWave) for (const h of this.heroes) h.gold += CONST.passiveGold * dt;
+    // oro pasivo: crece poco a poco durante la partida
+    if (this.time > CONST.firstWave) {
+      const rate = CONST.passiveGold + (CONST.passiveGoldMax - CONST.passiveGold) * Math.min(1, this.time / 1200);
+      for (const h of this.heroes) h.gold += rate * dt;
+    }
 
     // IA
     for (const u of this.units) {

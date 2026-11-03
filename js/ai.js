@@ -22,7 +22,8 @@ export function heroAI(g, u, dt) {
   const inFountain = g.nearFountain(u, u.team, CONST.fountainRadius - 1);
   // a mitad de partida el equipo se agrupa en un mismo carril para empujar
   const plan = teamPlan(g, u.team);
-  const lane = plan.lane && hpR > 0.45 ? plan.lane : u.lane || 'mid';
+  const defending = plan.defend && plan.defenders.includes(u.id);
+  const lane = defending ? plan.defend : plan.lane && hpR > 0.45 ? plan.lane : u.lane || 'mid';
   // punto del carril a «s» metros de la base azul, con un pequeño desplazamiento propio
   const laneSpot = (sv) => { const q = lanePoint(lane, sv); return V(q.x + ai.ox, q.z + ai.oz); };
 
@@ -195,10 +196,29 @@ function jungleAI(g, u, hpR) {
 // adelantada tenga menos vida.
 function teamPlan(g, team) {
   g.plans ||= {};
-  const p = (g.plans[team] ||= { t: -99, lane: null });
-  if (g.time - p.t < 6) return p;
+  const p = (g.plans[team] ||= { t: -99, lane: null, defend: null, defenders: [] });
+  if (g.time - p.t < 3) return p;
   p.t = g.time;
   const enemy = g.enemiesOf(team);
+  // ¿nos están empujando un carril? (enemigos cerca de nuestra torre más adelantada del carril)
+  p.defend = null; p.defenders = [];
+  let worst = 0;
+  for (const lane of ['top', 'mid', 'bot']) {
+    const ours = g.units.filter((s) => s.kind === 'tower' && s.team === team && s.lane === lane && s.alive);
+    const guard = ours.find((s) => !s.protected) || ours[0] || (team === 'blue' ? g.blueNexus : g.boss);
+    if (!guard?.alive) continue;
+    const minions = g.units.filter((m) => m.alive && m.kind === 'minion' && m.team === enemy && dist2(m.pos, guard.pos) < 22).length;
+    const heroes = g.heroes.filter((h) => h.alive && h.team === enemy && dist2(h.pos, guard.pos) < 22).length;
+    const threat = minions + heroes * 3 + (guard.hp < guard.maxHp * 0.6 ? 3 : 0);
+    if (threat >= 6 && threat > worst) {
+      worst = threat; p.defend = lane;
+      const bots = g.heroes.filter((h) => h.alive && h.team === team && h.isBot && h.hp / h.maxHp > 0.35)
+        .sort((a, b) => dist2(a.pos, guard.pos) - dist2(b.pos, guard.pos));
+      p.defenders = bots.slice(0, Math.min(bots.length, 1 + Math.ceil(heroes / 2) + (minions >= 8 ? 1 : 0))).map((h) => h.id);
+    }
+  }
+  if (g.time - (p.laneT ?? -99) < 6) return p;
+  p.laneT = g.time;
   const fallen = g.units.filter((s) => s.kind === 'tower' && s.team === enemy && !s.alive).length;
   if (g.time < 480 && fallen === 0) { p.lane = null; return p; }
   let best = null, bestHp = Infinity;
@@ -224,11 +244,46 @@ export function towerSafe(g, u, pos) {
   return true;
 }
 
+// Compras de los bots: siguen su lista de objetos; si no les llega para el siguiente,
+// compran un componente que les falte. Con la lista completa, mejoran a legendarios.
 function botShop(g, u) {
   if (u.potions < 2 && u.gold >= 50 && u.items.length < 2) { g.buy(u, 'potion'); }
+  for (let guard = 0; guard < 4; guard++) {
+    const target = botTarget(u);
+    if (!target) return;
+    const { cost } = g.recipeCost(u, target);
+    if (u.gold >= cost) { if (g.buy(u, target)) return; continue; } // buy devuelve un texto si falla
+    // componente más barato que falte (en cualquier nivel de la receta)
+    const missing = [];
+    const walk = (id, pool) => {
+      for (const c of ITEMS[id].from || []) {
+        const k = pool.indexOf(c);
+        if (k >= 0) { pool[k] = null; continue; }
+        if (ITEMS[c].from) walk(c, pool); else missing.push(c);
+      }
+    };
+    walk(target, [...u.items]);
+    const part = missing.sort((a, b) => ITEMS[a].cost - ITEMS[b].cost)[0];
+    if (!part || u.gold < ITEMS[part].cost || u.items.length >= CONST.maxItems) return;
+    if (g.buy(u, part)) return; // si falla, se acabó por ahora; si no, sigue comprando
+  }
+}
+
+function botTarget(u) {
   const build = HEROES[u.heroId].build;
-  const next = build[u.items.length];
-  if (next && u.gold >= ITEMS[next].cost) g.buy(u, next);
+  // cuenta los objetos de la lista que ya tiene (también si ya los mejoró)
+  const owned = [...u.items];
+  for (const id of build) {
+    const k = owned.findIndex((o) => o && (o === id || ITEMS[o].from?.includes(id)));
+    if (k >= 0) { owned[k] = null; continue; }
+    return id;
+  }
+  // lista completa: mejorar un objeto a legendario
+  for (const id of u.items) {
+    const up = ITEMS[id].into?.find((l) => ITEMS[l].tier === 3);
+    if (up) return up;
+  }
+  return null;
 }
 
 function canUse(g, u, i) {

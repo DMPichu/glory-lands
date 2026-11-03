@@ -85,12 +85,14 @@ export const KIT = {
     g.face(u, p);
     u.attackAnim = 0.001;
     const col = s.color ?? 0xffffff;
+    g.fx.glow(u.pos, col, 3, 0.25, 1.3);
+    g.fx.flash(u.pos, col, 10, 7, 0.2);
     g.spawnSkillshot(u, dir, {
-      color: col, size: s.size ?? 0.35, speed: s.speed ?? 28, range: def.range, width: s.width ?? 0.7, pierce: !!s.pierce, trail: true,
+      color: col, size: (s.size ?? 0.35) * 1.3, speed: s.speed ?? 28, range: def.range, width: s.width ?? 0.7, pierce: !!s.pierce, trail: true,
       onHit: (e) => {
         kitDamage(g, u, e, s, rank);
         applyCC(g, u, e, s, rank);
-        hitFx(g, e.pos, col, !s.pierce);
+        g.fx.impact(e.pos, col, s.pierce ? 0.7 : 1);
         if (s.chain) { // rayo encadenado
           let from = e, done = new Set([e.id]);
           for (let i = 0; i < s.chain.n; i++) {
@@ -119,9 +121,11 @@ export const KIT = {
     g.after(delay, () => {
       if (!u.alive && !s.persist) return;
       for (const e of g.enemiesInRadius(u.team, c, r, ['hero', 'minion'])) { kitDamage(g, u, e, s, rank); applyCC(g, u, e, s, rank); }
-      g.fx.ring(c, r, col, 0.5, { grow: true });
-      g.fx.burst(c, col, 30, 6, 0.15, 0.6, 2.5);
-      g.shake?.(0.1, c);
+      g.fx.impact(c, col, Math.max(0.8, r / 2.4));
+      g.fx.shockwave(c, r, col, 0.5);
+      if (r >= 4) g.fx.pillar(c, col, 0.6, r * 0.5, 7);
+      g.fx.burst(c, 0x8a7a60, 14, 4, 0.18, 0.7, 1.5); // polvo
+      g.shake?.(r >= 4 ? 0.2 : 0.1, c);
       if (s.zone) zone(g, u, rank, c, r, s.zone, col);
     });
     return true;
@@ -135,7 +139,9 @@ export const KIT = {
     const col = s.color ?? 0xffffff;
     const hits = g.enemiesInRadius(u.team, u.pos, range, ['hero', 'minion']).filter((e) => V(e.pos.x - u.pos.x, e.pos.z - u.pos.z).normalize().dot(dir) > Math.cos(half));
     const times = s.hits ?? 1;
+    g.fx.flash(u.pos, col, 12, 8, 0.25);
     for (let k = 0; k < times; k++) {
+      g.fx.fan(u.pos, dir, range, half, col, 0.35 + k * 0.18);
       g.after(k * 0.18, () => {
         for (const e of hits) { kitDamage(g, u, e, s, rank, 1 / Math.max(1, times * 0.7)); if (k === 0) applyCC(g, u, e, s, rank); hitFx(g, e.pos, col); }
       });
@@ -158,6 +164,7 @@ export const KIT = {
     g.dashTo(u, dest, s.speed ?? 24, {
       onStep: () => {
         if (Math.random() < 0.6) g.fx.spark(u.pos.clone().setY(0.5), col, 0.12, 0.35, 0.4);
+        if (Math.random() < 0.35) g.fx.glow(u.pos, col, 2.2, 0.35, 1.1); // estela
         if (s.firstOnly && first) return;
         for (const e of g.enemiesInRadius(u.team, u.pos, 1.5, ['hero', 'minion'])) {
           if (hit.has(e.id)) continue;
@@ -169,6 +176,7 @@ export const KIT = {
         }
       },
       onArrive: () => {
+        g.fx.shockwave(u.pos, s.landRadius ?? 1.8, col, 0.4);
         if (s.landRadius) {
           for (const e of g.enemiesInRadius(u.team, u.pos, s.landRadius, ['hero', 'minion'])) if (!hit.has(e.id)) { kitDamage(g, u, e, s, rank); applyCC(g, u, e, s, rank); }
           g.fx.ring(u.pos, s.landRadius, col, 0.5, { grow: true });
@@ -194,7 +202,10 @@ export const KIT = {
     } else dest = clampRange(u, p, def.range);
     g.clampPos(dest);
     g.fx.burst(u.pos, col, 16, 3, 0.13, 0.5, 2);
+    g.fx.glow(u.pos, col, 3.5, 0.4, 1.2);
+    g.fx.lightning(u.pos.clone().setY(1.2), dest.clone().setY(1.2), col, 0.3);
     u.pos.set(dest.x, 0, dest.z);
+    g.fx.flash(u.pos, col, 14, 8, 0.3);
     u.order = target ? { type: 'attack', target } : null;
     u.dash = null;
     if (s.cleanse) g.cleanse(u);
@@ -222,6 +233,8 @@ export const KIT = {
     if (s.shield) g.addShield(u, R(s.shield, rank) + (s.shieldHp || 0) * u.maxHp, d, u);
     g.fx.ring(u.pos, 1.8, col, 0.6, { grow: true });
     g.fx.burst(u.pos.clone().setY(1), col, 16, 2.5, 0.12, 0.6, 2);
+    g.fx.pillar(u.pos, col, 0.45, 0.9, 4);
+    g.fx.aura(u, col, d);
     u.attackCd = Math.min(u.attackCd, 0.1);
     return true;
   },
@@ -234,6 +247,7 @@ export const KIT = {
     if (s.dr) g.addBuff(t, 'dr', s.dur ?? 3, s.dr, { key: 'kit_sdr_' + def.id });
     if (s.cleanse) g.cleanse(t);
     const col = s.color ?? 0x9ad8ff;
+    g.fx.bubble(t, col, s.dur ?? 3, 1.35);
     g.fx.ring(t.pos, 1.6, col, 0.8, { grow: true });
     g.fx.burst(t.pos.clone().setY(1), col, 18, 2, 0.12, 0.7, 2);
     if (t !== u) g.fx.beam(u.pos.clone().setY(1.4), t.pos.clone().setY(1.4), col, 0.3);
@@ -250,6 +264,8 @@ export const KIT = {
       if (s.shield) g.addShield(t, R(s.shield, rank), 4, u);
       g.fx.ring(t.pos, 1.5, col, 0.7, { grow: true });
       g.fx.burst(t.pos.clone().setY(1), col, 14, 2, 0.12, 0.8, 2.5);
+      g.fx.pillar(t.pos, col, 0.8, 0.9, 6);
+      g.fx.glow(t.pos, col, 3, 0.5, 1.2);
     }
     if (s.radius) g.fx.ring(u.pos, s.radius, col, 0.8, { grow: true });
     if (s.selfHeal) g.heal(u, amt * s.selfHeal, u);
@@ -268,8 +284,10 @@ export const KIT = {
           kitDamage(g, u, e, s, rank, 1 / ticks);
           if (k === 0) applyCC(g, u, e, s, rank);
         }
-        g.fx.ring(u.pos, r, col, 0.45, { grow: true });
+        g.fx.shockwave(u.pos, r, col, 0.45);
         g.fx.burst(u.pos, col, 22, 5, 0.14, 0.45, 1.5);
+        g.fx.flash(u.pos, col, 16, r * 2, 0.3);
+        if (ticks > 1) { const a = k * 2.1; g.fx.fan(u.pos, { x: Math.cos(a), z: Math.sin(a) }, r, Math.PI / 3, col, 0.3); }
       });
     }
     if (s.shield) g.addShield(u, R(s.shield, rank), 3, u);
@@ -283,6 +301,8 @@ export const KIT = {
     g.addBuff(u, 'stealth', d, 1, { key: 'kit_stealth' });
     if (s.spd) g.addBuff(u, 'spd', d, R(s.spd, rank), { key: 'kit_sspd' });
     g.fx.burst(u.pos, s.color ?? 0xb0b0ff, 24, 3, 0.15, 0.6, 1.5);
+    g.fx.burst(u.pos, 0x6a6a7a, 30, 2.5, 0.3, 0.9, 1); // humo
+    g.fx.glow(u.pos, 0x9090a0, 4, 0.6, 1);
     u.order = null;
     return true;
   },
@@ -297,7 +317,8 @@ export const KIT = {
       if (t.alive && s.threshold && t.hp / t.maxHp < R(s.threshold, rank)) g.dealDamage(u, t, t.hp + 1, 'true');
       applyCC(g, u, t, s, rank);
       g.fx.burst(t.pos, col, 40, 7, 0.16, 0.6, 3);
-      g.fx.ring(t.pos, 2.8, col, 0.5, { grow: true });
+      g.fx.impact(t.pos, col, 1.8);
+      g.fx.pillar(t.pos, col, 0.8, 1.4, 12);
       g.fx.beam(t.pos.clone().setY(0.2), t.pos.clone().setY(9), col, 0.35);
       g.shake?.(0.25, t.pos);
     };

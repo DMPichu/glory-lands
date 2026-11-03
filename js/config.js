@@ -44,7 +44,8 @@ export const TEAMS = {
 
 export const CONST = {
   startGold: 500,
-  passiveGold: 2.2, // oro por segundo
+  passiveGold: 3.2, // oro por segundo al empezar…
+  passiveGoldMax: 6, // …y sube poco a poco hasta esto (a los 20 minutos)
   waveInterval: 30,
   firstWave: 5,
   fountainRadius: 10,
@@ -54,7 +55,7 @@ export const CONST = {
   heroKillGold: 300,
   assistGold: 150,
   towerGold: 175,
-  maxItems: 6,
+  maxItems: 8,
 };
 
 export function xpToNext(level) {
@@ -543,8 +544,58 @@ export const ITEMS = {
     desc: '+250 de vida y +3 de regeneración. Tus curaciones y escudos son un 25 % más fuertes.' },
 };
 
-export const SHOP_ORDER = ['potion', 'sword', 'fang', 'trigger', 'scope', 'ember', 'katana', 'tome', 'crystal', 'moon', 'staff',
-  'shield', 'cloak', 'heart', 'thorns', 'aegis', 'boots', 'feather', 'tear'];
+// ---------------------------------------------------------------------------
+// COMBINACIONES: componentes básicos -> objetos -> legendarios
+// ---------------------------------------------------------------------------
+// tier 1: componentes baratos; tier 2: los objetos de siempre (se construyen con
+// componentes); tier 3: legendarios (combinan dos objetos). Al comprar, los
+// componentes que ya tienes se gastan y rebajan el precio.
+Object.assign(ITEMS, {
+  longsword: { id: 'longsword', cat: 'Ataque', name: 'Hoja de Zugri', icon: '🔪', cost: 350, stats: { ad: 12 }, desc: '+12 de daño de ataque.' },
+  dagger: { id: 'dagger', cat: 'Ataque', name: 'Daga de Isserin', icon: '🗡️', cost: 300, stats: { as: 0.12 }, desc: '+12 % de velocidad de ataque.' },
+  gloves: { id: 'gloves', cat: 'Ataque', name: 'Guantes de ladrón', icon: '🧤', cost: 400, stats: { crit: 0.12 }, desc: '+12 % de probabilidad de crítico.' },
+  amp: { id: 'amp', cat: 'Magia', name: 'Grimorio de aprendiz', icon: '📘', cost: 435, stats: { ap: 20 }, desc: '+20 de poder mágico.' },
+  charm: { id: 'charm', cat: 'Magia', name: 'Amuleto de hada', icon: '🧿', cost: 300, stats: { cdr: 0.05 }, desc: '5 % de reducción de enfriamiento.' },
+  sapphire: { id: 'sapphire', cat: 'Magia', name: 'Zafiro de maná', icon: '💠', cost: 350, stats: { mp: 250 }, desc: '+250 de maná.' },
+  ruby: { id: 'ruby', cat: 'Defensa', name: 'Rubí de Komódo', icon: '🔴', cost: 400, stats: { hp: 150 }, desc: '+150 de vida.' },
+  cloth: { id: 'cloth', cat: 'Defensa', name: 'Cota ligera', icon: '🦺', cost: 300, stats: { armor: 15 }, desc: '+15 de armadura.' },
+  nullmantle: { id: 'nullmantle', cat: 'Defensa', name: 'Manto antimagia', icon: '🧥', cost: 450, stats: { mr: 25 }, desc: '+25 de resistencia mágica.' },
+
+  bladeDivine: { id: 'bladeDivine', cat: 'Ataque', name: 'Espada sagrada de Eaglere', icon: '⚜️', cost: 2900, stats: { ad: 45, crit: 0.25, as: 0.2 }, desc: '+45 de daño de ataque, +25 % de crítico y +20 % de velocidad de ataque.' },
+  stormbow: { id: 'stormbow', cat: 'Ataque', name: 'Arco tormenta de Gravenfort', icon: '🏹', cost: 2800, stats: { as: 0.55, onhit: 40 }, desc: '+55 % de velocidad de ataque y +40 de daño mágico por golpe.' },
+  acidfang: { id: 'acidfang', cat: 'Ataque', name: 'Colmillo del dragón ácido', icon: '🐲', cost: 3200, stats: { ad: 55, lifesteal: 0.18, arpen: 0.3 }, desc: '+55 de daño de ataque, 18 % de robo de vida y 30 % de penetración de armadura.' },
+  tigerclaw: { id: 'tigerclaw', cat: 'Ataque', name: 'Garra del tigre de Kugane', icon: '🐯', cost: 3300, stats: { ad: 60, crit: 0.3, arpen: 0.2 }, desc: '+60 de daño de ataque, +30 % de crítico y 20 % de penetración de armadura.' },
+  archstaff: { id: 'archstaff', cat: 'Magia', name: 'Báculo del Mago Larg', icon: '🪄', cost: 3500, stats: { ap: 140, mpen: 0.35, cdr: 0.15 }, desc: '+140 de poder mágico, 35 % de penetración mágica y 15 % de reducción de enfriamiento.' },
+  astoracrown: { id: 'astoracrown', cat: 'Magia', name: 'Corona de Astora', icon: '👑', cost: 2800, stats: { ap: 60, mp: 400, hp: 250, cdr: 0.2, healpow: 0.35 }, desc: '+60 de poder mágico, +400 de maná, +250 de vida, 20 % de reducción de enfriamiento y curaciones un 35 % más fuertes.' },
+  sunorb: { id: 'sunorb', cat: 'Magia', name: 'Orbe del mediodía', icon: '🌞', cost: 3200, stats: { ap: 90, onhit: 35, as: 0.2 }, desc: '+90 de poder mágico, +35 de daño mágico por golpe y +20 % de velocidad de ataque.' },
+  pandemonium: { id: 'pandemonium', cat: 'Magia', name: 'Velo del Pandemonio', icon: '🌀', cost: 2600, stats: { ap: 70, mr: 50, hp: 300 }, desc: '+70 de poder mágico, +50 de resistencia mágica y +300 de vida.' },
+  sanctuary: { id: 'sanctuary', cat: 'Defensa', name: 'Égida del Santuario', icon: '🏛️', cost: 3500, stats: { armor: 70, mr: 55, hp: 700 }, desc: '+70 de armadura, +55 de resistencia mágica y +700 de vida.' },
+  turtle: { id: 'turtle', cat: 'Defensa', name: 'Caparazón de la tortuga sagrada', icon: '🐢', cost: 2900, stats: { armor: 100, hp: 300, thorns: 0.4 }, desc: '+100 de armadura y +300 de vida. Devuelve el 40 % del daño de los ataques básicos.' },
+  frosttear: { id: 'frosttear', cat: 'Defensa', name: 'Lágrima de la reina helada', icon: '❄️', cost: 3000, stats: { hp: 800, mp: 300, hpRegen: 8, healpow: 0.3 }, desc: '+800 de vida, +300 de maná, +8 de regeneración y curaciones un 30 % más fuertes.' },
+  lotus: { id: 'lotus', cat: 'Defensa', name: 'Loto de jade', icon: '🪷', cost: 2600, stats: { mr: 60, hp: 300, cdr: 0.2 }, desc: '+60 de resistencia mágica, +300 de vida y 20 % de reducción de enfriamiento.' },
+  hawkwings: { id: 'hawkwings', cat: 'Utilidad', name: 'Alas de Blood Hawk', icon: '🪽', cost: 2600, stats: { speed: 2.2, as: 0.45 }, desc: '+2,2 de velocidad de movimiento y +45 % de velocidad de ataque.' },
+});
+ITEMS.cloak.cost = 950;
+const RECIPES = {
+  sword: ['longsword', 'longsword'], fang: ['longsword', 'ruby'], trigger: ['dagger', 'dagger'], scope: ['gloves', 'dagger'],
+  ember: ['dagger', 'amp'], katana: ['longsword', 'gloves'], tome: ['amp', 'charm'], crystal: ['sapphire', 'charm'],
+  moon: ['amp', 'amp'], staff: ['amp', 'sapphire', 'charm'], shield: ['cloth', 'ruby'], cloak: ['nullmantle', 'ruby'],
+  heart: ['ruby', 'ruby'], thorns: ['cloth', 'cloth'], aegis: ['shield', 'nullmantle'], feather: ['boots', 'dagger'], tear: ['ruby', 'sapphire'],
+  bladeDivine: ['sword', 'scope'], stormbow: ['trigger', 'ember'], acidfang: ['fang', 'katana'], tigerclaw: ['katana', 'scope'],
+  archstaff: ['staff', 'moon'], astoracrown: ['crystal', 'tear'], sunorb: ['moon', 'ember'], pandemonium: ['cloak', 'tome'],
+  sanctuary: ['aegis', 'heart'], turtle: ['thorns', 'shield'], frosttear: ['tear', 'heart'], lotus: ['cloak', 'crystal'], hawkwings: ['feather', 'trigger'],
+};
+for (const [id, from] of Object.entries(RECIPES)) ITEMS[id].from = from;
+for (const it of Object.values(ITEMS)) it.tier = it.consumable ? 0 : !it.from ? (it.id === 'boots' ? 2 : 1) : it.from.every((c) => ITEMS[c].from || c === 'boots') ? 3 : 2;
+// en qué se convierte cada objeto
+for (const it of Object.values(ITEMS)) it.into = Object.values(ITEMS).filter((o) => o.from?.includes(it.id)).map((o) => o.id);
+
+export const SHOP_ORDER = ['potion',
+  'longsword', 'dagger', 'gloves', 'amp', 'charm', 'sapphire', 'ruby', 'cloth', 'nullmantle',
+  'sword', 'fang', 'trigger', 'scope', 'ember', 'katana', 'tome', 'crystal', 'moon', 'staff',
+  'shield', 'cloak', 'heart', 'thorns', 'aegis', 'boots', 'feather', 'tear',
+  'bladeDivine', 'stormbow', 'acidfang', 'tigerclaw', 'archstaff', 'astoracrown', 'sunorb', 'pandemonium',
+  'sanctuary', 'turtle', 'frosttear', 'lotus', 'hawkwings'];
 
 // ---------------------------------------------------------------------------
 // SÚBDITOS Y ESTRUCTURAS
@@ -555,9 +606,9 @@ export const MINIONS = {
 };
 
 export const STRUCTURES = {
-  tower: { hp: 3200, ad: 155, armor: 45, mr: 45, as: 0.85, range: 10.5, radius: 1.6 },
-  nexus: { hp: 4500, ad: 170, armor: 40, mr: 40, as: 0.9, range: 10.5, radius: 3.4 },
-  boss: { hp: 5000, ad: 185, armor: 40, mr: 40, as: 0.9, range: 11.5, radius: 3.6 },
+  tower: { hp: 4000, ad: 155, armor: 45, mr: 45, as: 0.85, range: 10.5, radius: 1.6 },
+  nexus: { hp: 5500, ad: 170, armor: 40, mr: 40, as: 0.9, range: 10.5, radius: 3.4 },
+  boss: { hp: 6000, ad: 185, armor: 40, mr: 40, as: 0.9, range: 11.5, radius: 3.6 },
 };
 
 // ---------------------------------------------------------------------------

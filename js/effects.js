@@ -14,6 +14,7 @@ export class Effects {
     this.basicMats = new Map();
     this.glowMats = new Map();
     this.sprites = [];
+    this.extras = []; // abanicos, burbujas de escudo y auras
     this.pillars = [];
     this.glowTex = glowTexture();
     this.fadeTex = fadeTexture();
@@ -109,6 +110,32 @@ export class Effects {
     this.shockwave(pos, 1.6 * scale, color, 0.4);
   }
 
+  // Abanico en el suelo (conos, tajos): se ve de qué lado sale el golpe
+  fan(pos, dir, range, half, color, life = 0.35) {
+    const g = new THREE.CircleGeometry(range, 24, -half, half * 2);
+    const m = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+    const f = new THREE.Mesh(g, m);
+    f.rotation.x = -Math.PI / 2;
+    f.rotation.z = Math.atan2(dir.z, dir.x) * -1;
+    f.position.set(pos.x, 0.12, pos.z);
+    this.scene.add(f);
+    this.extras.push({ o: f, life, max: life, kind: 'fan' });
+  }
+
+  // Burbuja de escudo que sigue a una unidad mientras dura
+  bubble(unit, color, life = 3, radius = 1.3) {
+    const m = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending });
+    const b = new THREE.Mesh(this.sphereGeo, m);
+    b.scale.setScalar(radius);
+    this.scene.add(b);
+    this.extras.push({ o: b, life, max: life, kind: 'bubble', unit, radius });
+  }
+
+  // Aura que sube alrededor de una unidad (mejoras): chispas en espiral durante un rato
+  aura(unit, color, life = 3) {
+    this.extras.push({ o: null, life, max: life, kind: 'aura', unit, color, a: 0 });
+  }
+
   remove(obj) {
     this.scene.remove(obj);
   }
@@ -175,6 +202,28 @@ export class Effects {
   }
 
   update(dt) {
+    for (let i = this.extras.length - 1; i >= 0; i--) {
+      const x = this.extras[i];
+      x.life -= dt;
+      const k = Math.max(0, x.life / x.max);
+      if (x.kind === 'fan') { x.o.material.opacity = 0.55 * k; x.o.scale.setScalar(1 + (1 - k) * 0.15); }
+      if (x.kind === 'bubble') {
+        if (!x.unit.alive || !x.unit.shields?.length && x.max - x.life > 0.3) x.life = Math.min(x.life, 0.15);
+        x.o.position.set(x.unit.pos.x, 1.3, x.unit.pos.z);
+        x.o.material.opacity = 0.22 * Math.min(1, x.life * 4) * (0.85 + Math.sin(x.life * 12) * 0.15);
+      }
+      if (x.kind === 'aura' && x.unit.alive) {
+        x.a += dt * 9;
+        for (const s of [0, Math.PI]) {
+          const p = new THREE.Vector3(x.unit.pos.x + Math.cos(x.a + s) * 0.8, 0.3 + ((x.a * 0.35) % 2.2), x.unit.pos.z + Math.sin(x.a + s) * 0.8);
+          if (Math.random() < 0.7) this.spark(p, x.color, 0.09, 0.45, 1.2);
+        }
+      }
+      if (x.life <= 0) {
+        if (x.o) { this.scene.remove(x.o); if (x.kind === 'fan') x.o.geometry.dispose(); x.o.material.dispose(); }
+        this.extras.splice(i, 1);
+      }
+    }
     for (let i = this.sprites.length - 1; i >= 0; i--) {
       const p = this.sprites[i];
       p.life -= dt;

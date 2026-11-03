@@ -131,8 +131,8 @@ export class UI {
     this.shopTab = 'rec';
     this.shopSel = this.shopRec.find((id) => id !== 'potion') || SHOP_ORDER[0];
     this.shopSellIdx = -1;
-    const cats = ['rec', 'all', ...new Set(SHOP_ORDER.map((id) => ITEMS[id].cat).filter(Boolean))];
-    const names = { rec: '⭐ Recomendados', all: 'Todos' };
+    const cats = ['rec', 'all', 'basic', 'legend', ...new Set(SHOP_ORDER.map((id) => ITEMS[id].cat).filter(Boolean))];
+    const names = { rec: '⭐ Recomendados', all: 'Todos', basic: '🧩 Componentes', legend: '👑 Legendarios' };
     const icons = { Ataque: '⚔️', Magia: '✨', Defensa: '🛡️', Utilidad: '👢', Consumibles: '🧪' };
     const tabs = $('shopTabs');
     tabs.innerHTML = '';
@@ -158,17 +158,21 @@ export class UI {
   }
 
   renderShopGrid() {
-    const ids = this.shopTab === 'rec' ? this.shopRec : this.shopTab === 'all' ? SHOP_ORDER : SHOP_ORDER.filter((id) => ITEMS[id].cat === this.shopTab);
+    const ids = this.shopTab === 'rec' ? this.shopRec : this.shopTab === 'all' ? SHOP_ORDER
+      : this.shopTab === 'basic' ? SHOP_ORDER.filter((id) => ITEMS[id].tier === 1)
+      : this.shopTab === 'legend' ? SHOP_ORDER.filter((id) => ITEMS[id].tier === 3)
+      : SHOP_ORDER.filter((id) => ITEMS[id].cat === this.shopTab);
     document.querySelectorAll('.stab').forEach((b) => b.classList.toggle('sel', b.dataset.tab === this.shopTab));
     const grid = $('shopGrid');
     grid.innerHTML = '';
     for (const id of ids) {
       const it = ITEMS[id];
       const el = document.createElement('div');
-      el.className = 'scard';
+      el.className = 'scard t' + (it.tier ?? 2);
       el.dataset.id = id;
       el.innerHTML = `${this.shopRec.includes(id) && this.shopTab !== 'rec' ? '<span class="srec" title="Recomendado">⭐</span>' : ''}<span class="sown"></span>
-        <div class="sic">${itemIcon(id, it.icon)}</div><div class="sn">${it.name}</div><div class="sc">${it.cost} 🪙</div>`;
+        <div class="sic">${itemIcon(id, it.icon)}</div><div class="sn">${it.name}</div><div class="sc">${it.cost} 🪙</div>
+        <span class="stier">${it.tier === 1 ? 'BÁSICO' : it.tier === 3 ? 'LEGENDARIO' : ''}</span>`;
       el.onclick = () => { this.shopSel = id; this.shopSellIdx = -1; this.renderShopDetail(); };
       el.ondblclick = () => this.shopBuy(id);
       el.oncontextmenu = (e) => { e.preventDefault(); this.shopSel = id; this.shopSellIdx = -1; this.shopBuy(id); this.renderShopDetail(); };
@@ -197,14 +201,16 @@ export class UI {
     if (selling) {
       action = `<button class="sdSell" id="sdSell">Vender por ${Math.floor(it.cost * 0.6)} 🪙</button>`;
     } else {
-      const full = !it.consumable && p.items.length >= CONST.maxItems;
-      const why = !inShop ? 'Solo en tu base' : full ? 'Inventario lleno' : p.gold < it.cost ? `Te faltan ${Math.ceil(it.cost - p.gold)} 🪙` : '';
-      action = `<button class="sdBuy" id="sdBuy" ${why ? 'disabled' : ''}>${why || `Comprar · ${it.cost} 🪙`}</button>`;
+      const rc = it.consumable ? { cost: it.cost, used: [] } : g.recipeCost(p, id);
+      const full = !it.consumable && p.items.length - rc.used.length >= CONST.maxItems;
+      const why = !inShop ? 'Solo en tu base' : full ? 'Inventario lleno' : p.gold < rc.cost ? `Te faltan ${Math.ceil(rc.cost - p.gold)} 🪙` : '';
+      action = `<button class="sdBuy" id="sdBuy" ${why ? 'disabled' : ''}>${why || `Comprar · ${rc.cost} 🪙${rc.cost < it.cost ? ' (con tus componentes)' : ''}`}</button>`;
     }
     el.innerHTML = `<div class="sdTop"><div class="sdIcon">${itemIcon(id, it.icon)}</div>
         <div><div class="sdName">${it.name}</div><div class="sdCat">${it.cat || ''}${owned ? ` · tienes ${owned}` : ''}</div></div></div>
       <div class="sdStats">${this.statLines(it.stats)}</div>
-      <div class="sdDesc">${it.desc}</div>${action}`;
+      <div class="sdDesc">${it.desc}</div>${this.recipeHtml(id)}${action}`;
+    el.querySelectorAll('.sdPart').forEach((d) => d.addEventListener('click', () => { this.shopSel = d.dataset.id; this.shopSellIdx = -1; this.renderShopDetail(); this.shopKey = null; }));
     $('sdBuy')?.addEventListener('click', () => { this.shopBuy(id); this.renderShopDetail(); });
     $('sdSell')?.addEventListener('click', () => {
       const r = g.sell(p, this.shopSellIdx);
@@ -212,6 +218,20 @@ export class UI {
       this.shopSellIdx = -1; this.shopKey = null; this.renderShopDetail();
     });
     this.detailKey = `${id}|${selling}|${inShop}|${Math.floor(p.gold)}|${p.items.length}|${p.potions}`;
+  }
+
+  // Receta (con qué se construye) y en qué se convierte; los componentes que ya
+  // tiene el jugador salen resaltados. Clic en uno para verlo.
+  recipeHtml(id) {
+    const it = ITEMS[id], p = this.g.player;
+    const part = (c) => `<div class="sdPart${p.items.includes(c) ? ' have' : ''}" data-id="${c}" title="${ITEMS[c].name} · ${ITEMS[c].cost} 🪙">${itemIcon(c, ITEMS[c].icon)}</div>`;
+    let h = '';
+    if (it.from) {
+      const fee = it.cost - it.from.reduce((a, c) => a + ITEMS[c].cost, 0);
+      h += `<div class="sdRecipe"><b>Se construye con</b><div class="sdParts">${it.from.map(part).join('<span class="sdPlus">+</span>')}<span class="sdPlus">+ ${fee} 🪙</span></div></div>`;
+    }
+    if (it.into?.length) h += `<div class="sdRecipe"><b>Se mejora a</b><div class="sdParts">${it.into.map(part).join('')}</div></div>`;
+    return h;
   }
 
   updateShop() {
@@ -227,7 +247,9 @@ export class UI {
     document.querySelectorAll('.scard').forEach((el) => {
       const id = el.dataset.id, it = ITEMS[id];
       const owned = it.consumable ? p.potions : p.items.filter((x) => x === id).length;
-      el.classList.toggle('cant', p.gold < it.cost || !inShop);
+      const rc = it.consumable ? it.cost : g.recipeCost(p, id).cost;
+      el.classList.toggle('cant', p.gold < rc || !inShop);
+      el.querySelector('.sc').innerHTML = rc < it.cost ? `<s>${it.cost}</s>${rc} 🪙` : `${it.cost} 🪙`;
       el.classList.toggle('sel', id === this.shopSel && this.shopSellIdx < 0);
       el.classList.toggle('next', id === next && p.gold >= it.cost && inShop);
       const o = el.querySelector('.sown');
