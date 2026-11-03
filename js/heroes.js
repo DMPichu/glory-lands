@@ -720,38 +720,162 @@ function buildCatarina() {
 }
 
 // ------------------------------------------------------------------ héroes nuevos
-// Modelo provisional a partir de una descripción ('look' en js/roster.js): colores,
-// peinado y arma. Se sustituye por uno a medida cuando llegue el token del héroe.
-const hexCss = (h) => '#' + h.toString(16).padStart(6, '0');
+// Modelo a partir de una descripción ('look' en js/roster.js) sacada del token de
+// cada héroe: colores, especie (león, gato), orejas, peinado, tocado, detalles y arma.
+//   beast: { kind: 'lion'|'cat', fur, muzzle, mane, eye }   cabeza de bestia en vez de cara
+//   ears: 'elf'|'goblin'   hairStyle: short, long, ponytail, twin, bun, spiky, wild, bob,
+//   curly, slick (se pueden combinar con '+': 'long+ponytail')
+//   hat: witch, wide, beret, hood, catHood, helm, tiara, headband, bow (hatColor, hatAccent, feathers)
+//   beard, glasses, horns, hairStreak, tie, cape, topM, small, bulky
 export function buildFromLook(L) {
   const dark = (h, k = 0.55) => { const c = new THREE.Color(h).multiplyScalar(k); return '#' + c.getHexString(); };
-  const f = figure({ female: !!L.female, skin: L.skin, top: L.top, sleeves: L.top, pants: L.pants, boots: L.boots ?? 0x1e1a18,
-    face: { female: !!L.female, iris: L.eye || '#6a8aff', lash: dark(L.hair, 0.35), brow: dark(L.hair, 0.7) } });
-  const p = f.parts;
-  const hair = mat(L.hair, { r: 0.5 });
+  const B = L.beast;
+  const hairCol = L.hair ?? B?.mane ?? B?.fur ?? 0x222222;
+  const helm = L.hat === 'helm';
+  const f = figure({ female: !!L.female, skin: B ? B.fur : L.skin, top: L.top, sleeves: L.top, pants: L.pants, boots: L.boots ?? 0x1e1a18,
+    topM: L.topM, topR: L.topM ? 0.35 : undefined, elf: L.ears === 'elf' || L.ears === 'goblin', noFace: !!B || helm, gloves: helm ? L.hatColor : undefined,
+    face: { female: !!L.female, iris: L.eye || '#6a8aff', lash: dark(hairCol, 0.35), brow: dark(hairCol, 0.7) } });
+  const p = f.parts, H = p.head;
+  const hair = mat(hairCol, { r: 0.5 });
   const accent = mat(L.accent, { m: 0.4, r: 0.45 });
   if (L.bulky) p.body.scale.set(1.12, 1.02, 1.12);
-  // peinado
-  hairCap(p.head, hair);
-  const st = L.hairStyle;
-  if (st !== 'spiky') bangs(p.head, hair, 9, 0.16);
-  if (st === 'long' || st === 'wild') { longHair(p.head, hair, 0.95, 0.29); sideLocks(p.head, hair, 0.5); }
-  if (st === 'wild') for (let i = 0; i < 7; i++) p.head.add(m(cone(0.08, 0.45, 6), hair, -0.18 + i * 0.06, 0.05, -0.18, 1.0 + (i % 2) * 0.3, 0, (i - 3) * 0.15));
-  if (st === 'ponytail') { p.head.add(m(sph(0.07, 10), hair, 0, 0.12, -0.24)); p.head.add(m(cone(0.09, 0.75, 8), hair, 0, -0.25, -0.3, Math.PI - 0.25)); }
-  if (st === 'twin') for (const sx of [-1, 1]) { p.head.add(m(sph(0.065, 10), accent, sx * 0.2, 0.14, -0.08)); p.head.add(m(cone(0.08, 0.7, 8), hair, sx * 0.26, -0.22, -0.1, Math.PI, 0, sx * 0.15)); }
-  if (st === 'bun') { p.head.add(m(sph(0.1, 12), hair, 0, 0.25, -0.1)); p.head.add(m(tor(0.07, 0.018, Math.PI * 2, 6), accent, 0, 0.21, -0.09, Math.PI / 2 - 0.4)); }
-  if (st === 'spiky') spikes(p.head, hair, 11, 0.24);
-  if (st === 'short') sideLocks(p.head, hair, 0.22);
+  if (L.small) p.body.scale.setScalar(0.88);
+
+  if (B) {
+    // cabeza de bestia: hocico, nariz, ojos brillantes, orejas y (león) melena
+    const fur = mat(B.fur, { r: 0.85 });
+    const light = mat(B.muzzle ?? B.fur, { r: 0.85 });
+    H.add(sc(m(sph(0.235, 20), fur, 0, 0.02, 0), 1, 1.02, 1));
+    H.add(sc(m(sph(0.11, 14), light, 0, -0.07, 0.17), 1.25, 0.8, 1));
+    H.add(sc(m(sph(0.035, 8), mat(0x2a1a14), 0, -0.035, 0.27), 1.4, 0.8, 1));
+    const eyeM = mat(B.eye, { e: B.eye, ei: 1.3 });
+    for (const s of [-1, 1]) {
+      H.add(sc(m(sph(0.034, 8), eyeM, s * 0.085, 0.05, 0.195), 1.2, 0.8, 0.6));
+      H.add(m(sph(0.014, 6), mat(0x0a0a0a), s * 0.085, 0.05, 0.215));
+    }
+    if (B.kind === 'cat') {
+      for (const s of [-1, 1]) {
+        H.add(m(cone(0.075, 0.18, 4), fur, s * 0.14, 0.24, -0.02, 0, 0, -s * 0.35));
+        H.add(m(cone(0.04, 0.1, 4), mat(0xe8a0a8), s * 0.135, 0.22, 0.015, 0, 0, -s * 0.35));
+      }
+    } else {
+      const mane = mat(B.mane ?? B.fur, { r: 0.9 });
+      for (const s of [-1, 1]) H.add(m(sph(0.055, 8), fur, s * 0.17, 0.2, -0.02));
+      H.add(sc(m(sph(0.3, 16), mane, 0, -0.02, -0.08), 1.15, 1.2, 0.8));
+      for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2;
+        H.add(m(cone(0.08, 0.26, 6), mane, Math.cos(a) * 0.27, Math.sin(a) * 0.27 - 0.02, -0.06, 0, 0, a - Math.PI / 2));
+      }
+      p.body.add(sc(m(sph(0.2, 12), mane, 0, 1.62, 0.04), 1.3, 0.8, 1));
+    }
+    // cola
+    const tail = new THREE.Group();
+    tail.add(m(cyl(0.035, 0.025, 0.7, 6), fur, 0, -0.35, 0));
+    if (B.kind === 'lion') tail.add(m(sph(0.06, 8), mat(B.mane ?? B.fur), 0, -0.72, 0));
+    tail.position.set(0, 1.0, -0.2); tail.rotation.x = 0.9;
+    p.body.add(tail);
+  } else if (!helm) {
+    // peinado (combinable)
+    hairCap(H, hair);
+    const st = (L.hairStyle || 'short').split('+');
+    const has = (k) => st.includes(k);
+    if (!has('spiky') && !has('slick')) bangs(H, hair, 9, 0.16);
+    if (has('long') || has('wild')) { longHair(H, hair, 0.95, 0.29); sideLocks(H, hair, 0.5); }
+    if (has('wild')) for (let i = 0; i < 7; i++) H.add(m(cone(0.08, 0.45, 6), hair, -0.18 + i * 0.06, 0.05, -0.18, 1.0 + (i % 2) * 0.3, 0, (i - 3) * 0.15));
+    if (has('ponytail')) { H.add(m(sph(0.07, 10), hair, 0, 0.16, -0.22)); H.add(m(cone(0.09, 0.75, 8), hair, 0, -0.22, -0.3, Math.PI - 0.25)); }
+    if (has('twin')) {
+      const tie = L.tie != null ? mat(L.tie) : accent;
+      for (const sx of [-1, 1]) { H.add(m(sph(0.065, 10), tie, sx * 0.2, 0.14, -0.08)); H.add(m(cone(0.08, 0.7, 8), hair, sx * 0.26, -0.22, -0.1, Math.PI, 0, sx * 0.15)); }
+    }
+    if (has('bun')) { H.add(m(sph(0.1, 12), hair, 0, 0.25, -0.1)); H.add(m(tor(0.07, 0.018, Math.PI * 2, 6), accent, 0, 0.21, -0.09, Math.PI / 2 - 0.4)); }
+    if (has('spiky')) spikes(H, hair, 11, 0.24);
+    if (has('short')) sideLocks(H, hair, 0.22);
+    if (has('bob')) { longHair(H, hair, 0.36, 0.29); sideLocks(H, L.hairStreak != null ? mat(L.hairStreak, { r: 0.5 }) : hair, 0.3); }
+    if (has('curly')) for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; H.add(m(sph(0.075, 8), hair, Math.cos(a) * 0.21, 0.08 + Math.sin(i * 2.3) * 0.08, Math.sin(a) * 0.19 - 0.04)); }
+    if (has('slick')) H.add(sc(m(sph(0.13, 12), hair, 0, 0.2, 0.04), 1.3, 0.6, 1.2));
+  }
+  // orejas de goblin, largas y hacia fuera
+  if (L.ears === 'goblin') for (const s of [-1, 1]) H.add(m(cone(0.06, 0.32, 6), mat(L.skin, { r: 0.75 }), s * 0.3, 0.02, -0.02, 0, 0, -s * 1.35));
+  // barba, gafas y cuernos
+  if (L.beard != null) {
+    const bm = mat(L.beard, { r: 0.8 });
+    H.add(sc(m(sph(0.15, 12), bm, 0, -0.15, 0.08), 1.15, 0.95, 0.85));
+    for (const s of [-1, 1]) H.add(sc(m(sph(0.08, 8), bm, s * 0.15, -0.07, 0.07), 0.7, 1.3, 0.8));
+  }
+  if (L.glasses) {
+    const gm = mat(0x1a1a1e, { m: 0.6, r: 0.3 });
+    for (const s of [-1, 1]) H.add(m(tor(0.05, 0.007, Math.PI * 2, 5), gm, s * 0.07, -0.01, 0.235));
+    H.add(m(box(0.05, 0.008, 0.008), gm, 0, 0.0, 0.24));
+  }
+  if (L.horns != null) {
+    const hm = mat(L.horns, { r: 0.35, m: 0.2 });
+    for (const s of [-1, 1]) H.add(m(cone(0.045, 0.24, 6), hm, s * 0.15, 0.24, -0.04, -0.4, 0, -s * 0.5));
+  }
+  // tocados
+  const hc = L.hatColor != null ? mat(L.hatColor, { r: 0.6 }) : accent;
+  const ha = L.hatAccent != null ? mat(L.hatAccent, { m: 0.5, r: 0.4 }) : accent;
+  const feathers = () => { if (L.feathers != null) for (let i = 0; i < 3; i++) H.add(m(cone(0.035, 0.3, 5), mat(L.feathers, { e: L.feathers, ei: 0.3 }), 0.2 + i * 0.03, 0.32, -0.06 - i * 0.04, -0.6 - i * 0.2, 0, -0.7)); };
+  if (L.hat === 'witch') {
+    H.add(m(cyl(0.44, 0.44, 0.02, 28), hc, 0, 0.17, 0, -0.08));
+    H.add(m(cyl(0.19, 0.22, 0.12, 20), hc, 0, 0.24, -0.02));
+    H.add(m(tor(0.2, 0.02, Math.PI * 2, 6), ha, 0, 0.21, -0.02, Math.PI / 2));
+    H.add(m(cone(0.19, 0.5, 18), hc, 0.06, 0.53, -0.08, -0.25, 0, -0.25));
+    H.add(m(cone(0.08, 0.2, 10), hc, 0.2, 0.8, -0.22, -0.9, 0, -0.9));
+    feathers();
+  } else if (L.hat === 'wide') {
+    H.add(m(cyl(0.4, 0.4, 0.02, 28), hc, 0, 0.17, 0, -0.12));
+    H.add(m(cyl(0.17, 0.2, 0.2, 18), hc, 0, 0.27, -0.02));
+    H.add(m(tor(0.19, 0.018, Math.PI * 2, 6), ha, 0, 0.2, -0.02, Math.PI / 2));
+    feathers();
+  } else if (L.hat === 'beret') {
+    H.add(sc(m(sph(0.25, 18), hc, 0.03, 0.2, -0.02), 1.15, 0.42, 1.15));
+  } else if (L.hat === 'hood' || L.hat === 'catHood') {
+    const hm = mat(L.hatColor ?? L.top, { r: 0.7, side: DS });
+    H.add(m(capSph(0.3, 0, 1.05), hm, 0, 0.02, -0.01));
+    H.add(m(capSph(0.3, 0, 2.5, Math.PI, Math.PI), hm, 0, 0.02, -0.02));
+    for (const s of [-1, 1]) H.add(m(box(0.025, 0.4, 0.06), ha, s * 0.27, -0.05, 0.12, 0, 0, -s * 0.12));
+    if (L.hat === 'catHood') for (const s of [-1, 1]) H.add(m(cone(0.09, 0.2, 4), hm, s * 0.16, 0.3, -0.02, 0, 0, -s * 0.3));
+    p.body.add(m(capeGeo(0.55, 1.0, 0.3, 0.4), hm, 0, 1.15, -0.2));
+  } else if (helm) {
+    const steel = mat(L.hatColor ?? 0xb8bcc8, { m: 0.85, r: 0.3 });
+    H.add(m(cyl(0.25, 0.24, 0.44, 18), steel, 0, 0.0, 0));
+    H.add(m(cyl(0.25, 0.25, 0.02, 18), steel, 0, 0.22, 0));
+    H.add(m(box(0.34, 0.025, 0.02), mat(0x0a0a0c), 0, 0.03, 0.24));
+    H.add(m(box(0.03, 0.22, 0.02), mat(0xe0b33c, { m: 0.8, r: 0.3 }), 0, -0.04, 0.25));
+    // turbante y paño de tela encima
+    const cloth = mat(L.hatAccent ?? 0x6a2a7a, { r: 0.8, side: DS });
+    H.add(sc(m(sph(0.27, 16), cloth, 0, 0.24, -0.02), 1, 0.45, 1));
+    H.add(m(tor(0.25, 0.04, Math.PI * 2, 8), cloth, 0, 0.2, 0, Math.PI / 2));
+    p.body.add(m(capeGeo(0.6, 1.1, 0.3, 0.5), cloth, 0, 1.1, -0.2));
+  } else if (L.hat === 'tiara') {
+    const gold = mat(0xe0b33c, { m: 0.85, r: 0.3 });
+    H.add(m(tor(0.2, 0.012, Math.PI, 6), gold, 0, 0.17, 0.06, -0.5));
+    for (let i = -2; i <= 2; i++) H.add(m(cone(0.022, 0.08 - Math.abs(i) * 0.015, 4), gold, i * 0.05, 0.27 - Math.abs(i) * 0.01, 0.12));
+  } else if (L.hat === 'headband') {
+    H.add(m(tor(0.245, 0.02, Math.PI * 2, 6), hc, 0, 0.14, 0, Math.PI / 2 - 0.45));
+    const pin = mat(0x1a1a1e);
+    for (const s of [-1, 1]) {
+      H.add(m(cyl(0.012, 0.012, 0.42, 5), pin, s * 0.05, 0.24, -0.16, 0, 0, Math.PI / 2 - s * 0.15));
+      for (let i = 0; i < 3; i++) H.add(m(sph(0.022, 6), mat(0xc0182a, { e: 0x600010, ei: 0.5 }), s * (0.2 + i * 0.03), 0.1 - i * 0.07, -0.08));
+    }
+  } else if (L.hat === 'bow') {
+    const bm = mat(L.hatColor ?? L.accent, { r: 0.6 });
+    for (const s of [-1, 1]) H.add(sc(m(cone(0.08, 0.16, 6), bm, s * 0.09, 0.25, -0.02, 0, 0, s * Math.PI / 2), 1, 1, 0.5));
+    H.add(m(sph(0.035, 8), bm, 0, 0.25, -0.02));
+  }
+
   // ropa: cinturón, hombreras y falda o faldón con el color de acento
   p.body.add(m(cyl(0.2, 0.2, 0.06), accent, 0, 1.1, 0));
   for (const sx of [-1, 1]) p.body.add(sc(m(sph(0.115, 10), accent, sx * 0.27, 1.6, 0), 1.1, 0.6, 1));
   p.body.add(m(box(0.12, 0.3, 0.04), accent, 0, 1.38, 0.21));
   if (L.female) {
-    p.body.add(m(cyl(0.2, 0.36, 0.5, 14), mat(L.top, { r: 0.6 }), 0, 0.84, 0));
+    p.body.add(m(cyl(0.2, 0.36, 0.5, 14), mat(L.top, { r: 0.6, m: L.topM ?? 0.05 }), 0, 0.84, 0));
     p.body.add(m(tor(0.355, 0.016, Math.PI * 2, 6), accent, 0, 0.6, 0, Math.PI / 2));
   } else {
-    p.body.add(m(cyl(0.21, 0.3, 0.42, 14), mat(L.top, { r: 0.6 }), 0, 0.86, 0));
+    p.body.add(m(cyl(0.21, 0.3, 0.42, 14), mat(L.top, { r: 0.6, m: L.topM ?? 0.05 }), 0, 0.86, 0));
   }
+  let cape = null;
+  if (L.cape != null) { cape = m(capeGeo(0.6, 1.15, 0.35, 0.45), mat(L.cape, { r: 0.75, side: DS }), 0, 1.02, -0.22); p.body.add(cape); }
   // arma
   const glowM = mat(L.accent, { e: L.accent, ei: 1.1 });
   const w = L.weapon;
@@ -766,6 +890,13 @@ export function buildFromLook(L) {
     if (w === 'candle') st2.add(m(cone(0.04, 0.12, 6), mat(0xffe060, { e: 0xffb000, ei: 2 }), 0, 1.34, 0));
     st2.rotation.x = Math.PI / 2.4; st2.position.set(0, 0, 0.05);
     p.handR.add(st2);
+  } else if (w === 'book') {
+    const book = new THREE.Group();
+    book.add(m(box(0.3, 0.06, 0.22), mat(0x2a6ab8, { r: 0.5 })));
+    book.add(m(box(0.28, 0.065, 0.2), mat(0xfff8e0), 0.01, 0, 0));
+    book.add(m(oct(0.05), glowM, 0, 0.06, 0));
+    book.position.set(0, -0.02, 0.12);
+    p.handL.add(book);
   } else if (w === 'hammer' || w === 'axe') {
     const hm = new THREE.Group();
     hm.add(m(cyl(0.03, 0.03, 1.1, 6), mat(0x4a3220), 0, 0.4, 0));
@@ -780,8 +911,8 @@ export function buildFromLook(L) {
   } else { // puños
     for (const hd of [p.handR, p.handL]) hd.add(m(sph(0.085, 10), glowM));
   }
-  void hexCss;
-  return { ...f, extra: {} };
+  const anim = cape ? (t, u) => { cape.rotation.x = 0.08 + (u.moving ? 0.25 : 0.04) + Math.sin(t * 3) * 0.03; } : undefined;
+  return { ...f, extra: anim ? { cape, anim } : {} };
 }
 
 export const HERO_BUILDERS_V2 = {

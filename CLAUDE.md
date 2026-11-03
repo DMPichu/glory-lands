@@ -18,6 +18,7 @@ python -m http.server 8770          # y abrir http://localhost:8770
 - `?hero=<id>` empieza directamente con ese héroe; `&auto=1` lo maneja un bot; `&speed=4` acelera; `&bloom=0` quita el brillo; `&mute=1` silencia; `&mode=1v1` modo práctica.
 - **Autoprueba:** `http://localhost:8770/?selftest=1&minutes=4`. En unos segundos el título pasa a `SELFTEST OK` o `SELFTEST FAIL` y la página muestra un informe JSON: qué archivos opcionales encontró (retratos, tokens, iconos, audio, .glb), si las 4 habilidades de cada héroe funcionan y una partida 7 contra 7 simulada. **Ejecútala después de cada cambio.**
 - Sin navegador: `npm install && npx playwright install chromium && npm test` (abre la autoprueba en Chromium sin pantalla y sale con código 1 si falla). No se ha probado todavía en la nube; si falla la instalación, usa el navegador.
+- **Galería de modelos:** `http://localhost:8770/tools/galeria.html` muestra todos los héroes junto a su token (`?ids=hermes,umi` para elegir, `&red=1` para la versión de la Legión). Úsala para comprobar que cada modelo se parece a su token.
 - Comprobar sintaxis: `npm run check` (o `node --check js/<archivo>.js`).
 
 ## Mapa del código

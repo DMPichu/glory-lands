@@ -28,7 +28,7 @@ Usa estos `id` (en minúsculas, sin tildes). Cada uno ya tiene su token en `toke
 
 **Rediseño de Catarina** (`catarina`, ya existe): luchadora de críticos con **una sola** habilidad de hielo y una definitiva de un único corte que ejecuta a un enemigo. Su token sigue en `tokens/catarina.webp`.
 
-Los tokens los eligió la dueña en el selector (y pasó aparte los de Emmeline, Zeflie y Zestari). **Los modelos de `js/heroes.js` deben parecerse a ellos**: especie (Hermes es un león, Slinxi una goblin, Umi, Candle y Konta son felinos), pelo, colores y ropa. Para cambiar un token basta con sustituir `tokens/<id>.webp`.
+Los tokens los eligió la dueña en el selector (y pasó aparte los de Emmeline, Zeflie y Zestari). **Los modelos deben parecerse a ellos** (ya lo hacen: el campo `look` de cada héroe en `js/roster.js` describe su token y lo dibuja `buildFromLook` en `js/heroes.js`; compruébalo en `tools/galeria.html`): especie (Hermes es un león, Slinxi una goblin, Umi, Candle y Konta son felinos), pelo, colores y ropa. Para cambiar un token basta con sustituir `tokens/<id>.webp`.
 
 ## Ilustraciones de cuerpo entero
 

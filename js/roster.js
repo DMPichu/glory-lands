@@ -1,6 +1,6 @@
 // Héroes nuevos (17) y el rework de Catarina. Cada habilidad se describe con datos y
 // la ejecuta js/kit.js. Las estadísticas parten de plantillas por rol.
-// El aspecto ('look') es provisional hasta que lleguen los tokens: lo dibuja
+// El aspecto ('look') sigue el token de cada héroe (tokens/<id>.webp): lo dibuja
 // buildFromLook en js/heroes.js.
 import { HEROES, HERO_ORDER } from './config.js';
 import { PASSIVE_IMPL } from './abilities.js';
@@ -43,7 +43,7 @@ const NEW = {
         'Salta sobre el héroe enemigo más cercano al cursor y lo golpea: 200/325/450 (+120 % AD) y un 30 % de la vida que le falta.'),
     ],
     build: ['sword', 'scope', 'boots', 'katana', 'shield', 'fang'], prio: [0, 1, 2],
-    look: { skin: 0xf2d4b8, hair: 0xf0d080, hairStyle: 'short', top: 0xf4f0e4, accent: 0xe0b33c, pants: 0x3a3a48, weapon: 'sword', eye: '#e8a030' },
+    look: { beast: { kind: 'lion', fur: 0xc8903c, muzzle: 0xe8c890, mane: 0x8a5a24, eye: 0xffb030 }, top: 0x6a4a30, accent: 0xb8bcc8, pants: 0x3a2a20, weapon: 'sword', bulky: true, cape: 0x2a3a5a },
   },
   // ------------------------------------------------------------ POLETT
   polett: {
@@ -62,7 +62,7 @@ const NEW = {
         'Gira durante 2,4 s golpeando a todos a su alrededor: 240/380/520 (+140 % AD) de daño físico en total.', { radius: 4 }),
     ],
     build: ['trigger', 'fang', 'boots', 'ember', 'shield', 'heart'], prio: [0, 1, 2],
-    look: { skin: 0xf8dccc, hair: 0xff8aa8, hairStyle: 'ponytail', top: 0x2a2a3a, accent: 0xff8aa8, pants: 0x1a1a24, weapon: 'twin', female: true, eye: '#ff6a9a' },
+    look: { skin: 0xc89070, hair: 0x4a2418, hairStyle: 'curly', top: 0x1a1a1a, accent: 0xffffff, pants: 0x1a1a1a, weapon: 'twin', female: true, eye: '#d02030', hat: 'bow', hatColor: 0xffffff },
   },
   // ------------------------------------------------------------ BELIAN
   belian: {
@@ -81,7 +81,7 @@ const NEW = {
         'Cura 200/300/400 (+80 % AP) a todos los aliados en 12 m, les quita los efectos negativos y les da un escudo.'),
     ],
     build: ['tear', 'crystal', 'boots', 'staff', 'cloak', 'aegis'], prio: [1, 2, 0],
-    look: { skin: 0xf6e0d0, hair: 0xb8f0c8, hairStyle: 'long', top: 0xf4fff6, accent: 0x5ad888, pants: 0xe8f0ea, weapon: 'staff', female: true, eye: '#3ad880' },
+    look: { skin: 0xfde6d8, hair: 0xff8a30, hairStyle: 'long', top: 0xf4f6ff, accent: 0xe0b33c, pants: 0x2a5aa0, weapon: 'staff', female: true, eye: '#3aa860', hat: 'hood', hatColor: 0xf8f8ff, hatAccent: 0xe0b33c },
   },
   // ------------------------------------------------------------ VALLENTINE
   vallentine: {
@@ -100,7 +100,7 @@ const NEW = {
         'Parte el suelo a su alrededor (5,5 m): 180/300/420 (+80 % AD, +5 % de su vida máxima) y aturde 1,2 s.', { radius: 5.5 }),
     ],
     build: ['heart', 'shield', 'boots', 'thorns', 'cloak', 'aegis'], prio: [0, 2, 1],
-    look: { skin: 0xd8b090, hair: 0x5a3a28, hairStyle: 'short', top: 0x8a5a3a, accent: 0xc8a050, pants: 0x3a2a20, weapon: 'hammer', eye: '#a06030', bulky: true },
+    look: { skin: 0xc89070, hair: 0x1a1a1e, hairStyle: 'slick', beard: 0x1a1a1e, top: 0xe8962a, accent: 0x2a2e3a, pants: 0x2a2e3a, weapon: 'hammer', eye: '#5a3a20', bulky: true },
   },
   // ------------------------------------------------------------ EMMELINE
   emmeline: {
@@ -119,7 +119,7 @@ const NEW = {
         'Tras 0,9 s, una supernova magenta estalla en la zona: 280/440/600 (+100 % AP) y aturde 0,6 s.', { radius: 5 }),
     ],
     build: ['tome', 'crystal', 'boots', 'moon', 'staff', 'cloak'], prio: [0, 1, 2],
-    look: { skin: 0xfae0e4, hair: 0xff4ad8, hairStyle: 'long', top: 0x3a1040, accent: 0xff4ad8, pants: 0x2a0a30, weapon: 'staff', female: true, eye: '#ff4ad8' },
+    look: { skin: 0xfdeeee, hair: 0xf4f4fa, hairStyle: 'long+ponytail', top: 0x1a1418, accent: 0xc0182a, pants: 0x1a1418, weapon: 'staff', female: true, eye: '#ff2a3a', hat: 'headband', hatColor: 0xb01828 },
   },
   // ------------------------------------------------------------ LUCILLE
   lucille: {
@@ -138,7 +138,7 @@ const NEW = {
         'Congela todo a su alrededor (6 m): 150/250/350 (+5 % de su vida máxima) y aturde 1,25/1,5/1,75 s.', { radius: 6 }),
     ],
     build: ['heart', 'cloak', 'boots', 'shield', 'aegis', 'tear'], prio: [0, 1, 2],
-    look: { skin: 0xfdeef0, hair: 0xe8f8ff, hairStyle: 'long', top: 0x9ae8ff, accent: 0xffffff, pants: 0xc8f0ff, weapon: 'fan', female: true, eye: '#5ac8ff' },
+    look: { skin: 0xfdeef0, hair: 0x14141c, hairStyle: 'bob', hairStreak: 0x2a6aff, top: 0x16161e, accent: 0x5ab8ff, pants: 0x16161e, weapon: 'fan', female: true, eye: '#4a9aff', hat: 'tiara', cape: 0x1a2a6a },
   },
   // ------------------------------------------------------------ ESPERANZA
   esperanza: {
@@ -157,7 +157,7 @@ const NEW = {
         'Un eclipse cubre la zona 4 s: daña y ralentiza a los enemigos y cura a los aliados que estén dentro.', { radius: 5 }),
     ],
     build: ['fang', 'tear', 'boots', 'ember', 'aegis', 'heart'], prio: [0, 1, 2],
-    look: { skin: 0xf0d8c8, hair: 0x2a1a3a, hairStyle: 'long', top: 0x1e1428, accent: 0x9a6aff, pants: 0x140e1c, weapon: 'sword', female: true, eye: '#b08aff' },
+    look: { skin: 0xf0e4dc, hair: 0x5a7080, hairStyle: 'long', top: 0x1a2430, accent: 0x3a8ab8, pants: 0x141a22, weapon: 'sword', female: true, eye: '#8a98a8', hat: 'beret', hatColor: 0x1a1e26, cape: 0x1e2a38 },
   },
   // ------------------------------------------------------------ FUYUMI
   fuyumi: {
@@ -176,7 +176,7 @@ const NEW = {
         'Una columna de luz cae sobre el héroe enemigo más cercano al cursor: 150/250/350 (+100 % AD) y un 40 % de la vida que le falta.'),
     ],
     build: ['sword', 'katana', 'boots', 'scope', 'fang', 'cloak'], prio: [0, 2, 1],
-    look: { skin: 0xfae6da, hair: 0xfff4d0, hairStyle: 'ponytail', top: 0xf4f0ff, accent: 0xffd040, pants: 0x2a2a3a, weapon: 'daggers', female: true, eye: '#ffd040' },
+    look: { skin: 0xfae4dc, hair: 0x5a2a8a, hairStyle: 'long', top: 0x2a2a6a, accent: 0xf4f4ff, pants: 0x1e1e4a, weapon: 'daggers', female: true, eye: '#a86aff' },
   },
   // ------------------------------------------------------------ SLINXI
   slinxi: {
@@ -195,7 +195,7 @@ const NEW = {
         'Arrolla todo lo que hay hasta el cursor (12 m): 150/250/350 (+80 % AD) y los aparta a un lado.'),
     ],
     build: ['heart', 'boots', 'shield', 'cloak', 'thorns', 'aegis'], prio: [0, 1, 2],
-    look: { skin: 0xf8e4d4, hair: 0x7affd8, hairStyle: 'twin', top: 0x1e5a50, accent: 0x7affd8, pants: 0x143a34, weapon: 'fists', female: true, eye: '#3affc0' },
+    look: { skin: 0x6ac83a, hair: 0xe0281e, hairStyle: 'short+spiky', ears: 'goblin', top: 0x1a1a1e, accent: 0xe0b33c, pants: 0x1a1a1e, weapon: 'daggers', female: true, eye: '#e02020', hat: 'bow', hatColor: 0x1a1a1e, cape: 0xb0181e, small: true },
   },
   // ------------------------------------------------------------ UMI
   umi: {
@@ -214,7 +214,7 @@ const NEW = {
         'Florece un loto de jade: daña a los enemigos cercanos y le da un escudo de 250/400/550 durante 3 s.', { radius: 6 }),
     ],
     build: ['tear', 'boots', 'ember', 'aegis', 'heart', 'trigger'], prio: [1, 0, 2],
-    look: { skin: 0xf4dcc8, hair: 0x1a1a1a, hairStyle: 'bun', top: 0xf0e8d0, accent: 0x4aff9a, pants: 0x3a6a4a, weapon: 'fists', female: true, eye: '#2ad880' },
+    look: { skin: 0x3a2a24, hair: 0xf0e8dc, hairStyle: 'bob', top: 0x2a2030, accent: 0xe0b33c, pants: 0x1e1824, weapon: 'fists', female: true, eye: '#ff8a20', hat: 'catHood', hatColor: 0x2e2638, hatAccent: 0xe0b33c },
   },
   // ------------------------------------------------------------ ZEFLIE
   zeflie: {
@@ -232,7 +232,7 @@ const NEW = {
         'Un rayo de sol atraviesa todo en línea (22 m): 220/350/480 (+90 % AP).'),
     ],
     build: ['tome', 'crystal', 'boots', 'moon', 'staff', 'cloak'], prio: [0, 1, 2],
-    look: { skin: 0xfae0cc, hair: 0xffa040, hairStyle: 'twin', top: 0xfff0d8, accent: 0xff7a20, pants: 0xffe0b0, weapon: 'staff', female: true, eye: '#ff8a20' },
+    look: { skin: 0xfdeee4, hair: 0xf6f0dc, hairStyle: 'twin', tie: 0x1a1a1a, ears: 'elf', top: 0x4a5a30, accent: 0xe0702a, pants: 0x3a4a28, weapon: 'staff', female: true, eye: '#2ab0b0' },
   },
   // ------------------------------------------------------------ ZESTARI
   zestari: {
@@ -251,7 +251,7 @@ const NEW = {
         'Tres cortes en círculo (4,5 m): 220/360/500 (+120 % AD) en total; hacen estallar la marca solar.', { radius: 4.5 }),
     ],
     build: ['sword', 'katana', 'boots', 'fang', 'scope', 'shield'], prio: [0, 1, 2],
-    look: { skin: 0xf6dcd4, hair: 0x6a7ad8, hairStyle: 'short', top: 0x1a1e3a, accent: 0x9ab8ff, pants: 0x101428, weapon: 'katana', female: true, eye: '#9ab8ff' },
+    look: { skin: 0xc8906a, hair: 0xc8b8e8, hairStyle: 'bob', ears: 'elf', top: 0x2a2048, accent: 0xe0b33c, pants: 0x1e1834, weapon: 'book', female: true, eye: '#2ab0b0', hat: 'witch', hatColor: 0x2e2a4a, hatAccent: 0xe0b33c, feathers: 0x6a5aff },
   },
   // ------------------------------------------------------------ XELUNA
   xeluna: {
@@ -270,7 +270,7 @@ const NEW = {
         'Durante 6 s gana un 40 % de velocidad de ataque, un 30 % de robo de vida y un 20 % de reducción de daño.'),
     ],
     build: ['fang', 'heart', 'boots', 'thorns', 'katana', 'aegis'], prio: [0, 2, 1],
-    look: { skin: 0xe8c8b0, hair: 0xd8d8e8, hairStyle: 'wild', top: 0x3a1a1a, accent: 0xff6a40, pants: 0x2a1414, weapon: 'axe', female: true, eye: '#ff6a40' },
+    look: { skin: 0xc89878, hair: 0xece8f0, hairStyle: 'wild', top: 0x3a2a20, accent: 0x8a5ac8, pants: 0x2a1e18, weapon: 'axe', female: true, eye: '#e02a3a', horns: 0x6a4a9a },
   },
   // ------------------------------------------------------------ VRIZAHL
   vrizahl: {
@@ -289,7 +289,7 @@ const NEW = {
         'Una descarga atraviesa la línea (18 m): 320/500/680 (+110 % AP) y salta a enemigos cercanos.'),
     ],
     build: ['tome', 'moon', 'boots', 'staff', 'crystal', 'cloak'], prio: [0, 1, 2],
-    look: { skin: 0xe8d4c4, hair: 0x2a3a5a, hairStyle: 'spiky', top: 0x1a2a4a, accent: 0x6ac8ff, pants: 0x101a30, weapon: 'staff', eye: '#6ac8ff' },
+    look: { skin: 0xf4ece8, hair: 0xf0f0f4, hairStyle: 'wild', top: 0x1a1a1e, accent: 0xf4f4f8, pants: 0x1a1a1e, weapon: 'staff', eye: '#6ac8ff', glasses: true },
   },
   // ------------------------------------------------------------ CANDLE
   candle: {
@@ -308,7 +308,7 @@ const NEW = {
         'Una tormenta cubre la zona 4 s: daño continuo y aturdimientos al azar.', { radius: 5 }),
     ],
     build: ['tome', 'crystal', 'boots', 'staff', 'cloak', 'moon'], prio: [0, 2, 1],
-    look: { skin: 0xfae6d6, hair: 0xffe060, hairStyle: 'bun', top: 0x2a2440, accent: 0xffe060, pants: 0x1e1a30, weapon: 'candle', female: true, eye: '#ffd040' },
+    look: { beast: { kind: 'cat', fur: 0x1a1a1e, muzzle: 0xf4f0ec, eye: 0xffd040 }, top: 0x8a8e98, topM: 0.7, accent: 0x6a2a8a, pants: 0x1e1a24, weapon: 'candle', female: true, hat: 'witch', hatColor: 0x3a2a4a, hatAccent: 0x9a4ad8 },
   },
   // ------------------------------------------------------------ CABBO
   cabbo: {
@@ -327,7 +327,7 @@ const NEW = {
         'Cura 150/230/310 (+60 % AP) y da un escudo a todos los aliados en 10 m.'),
     ],
     build: ['heart', 'tear', 'boots', 'shield', 'aegis', 'cloak'], prio: [1, 0, 2],
-    look: { skin: 0xd8a880, hair: 0x6a8a3a, hairStyle: 'short', top: 0x5a7a3a, accent: 0xe8c860, pants: 0x3a4a2a, weapon: 'fists', eye: '#8ae070', bulky: true },
+    look: { skin: 0xd8a880, top: 0x6a2a7a, accent: 0xd04a3a, pants: 0x4a1e5a, weapon: 'fists', hat: 'helm', hatColor: 0xb8bcc8, hatAccent: 0x8a3a9a, bulky: true },
   },
   // ------------------------------------------------------------ KONTA
   konta: {
@@ -346,7 +346,7 @@ const NEW = {
         'Aparece detrás del héroe enemigo más cercano al cursor: 200/320/440 (+110 % AD) y lo aturde 1 s.'),
     ],
     build: ['sword', 'katana', 'boots', 'fang', 'scope', 'cloak'], prio: [2, 0, 1],
-    look: { skin: 0xe8c8a8, hair: 0xff9a40, hairStyle: 'spiky', top: 0x2a1a10, accent: 0xff9a40, pants: 0x1a1008, weapon: 'daggers', eye: '#ffa040' },
+    look: { beast: { kind: 'cat', fur: 0x8a6a44, muzzle: 0xd8c8a8, eye: 0x40e0d0 }, top: 0x6a5034, accent: 0x2ab8c0, pants: 0x4a3828, weapon: 'daggers', hat: 'wide', hatColor: 0x2a9aa8, hatAccent: 0x6a4a2a, feathers: 0xd8c8a8, cape: 0x2a9aa8 },
   },
 };
 
