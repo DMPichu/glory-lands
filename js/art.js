@@ -19,6 +19,9 @@ export function itemIcon(id, emoji) {
 
 // Retrato redondo: retrato ilustrado, si no el token, si no la inicial
 export function portrait(def) {
+  // si ya se cargó para el lienzo, se usa directamente (sin pasar por el 404 del retrato)
+  const ready = cache.get(def.id);
+  if (ready?.ok) return `${def.name[0]}<img class="tok" src="${ready.src}" alt="">`;
   const [a, b] = portraitUrls(def.id);
   return `${def.name[0]}<img class="tok" src="${a}" alt="" onerror="if(this.dataset.f)this.remove();else{this.dataset.f=1;this.src='${b}'}">`;
 }

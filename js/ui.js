@@ -563,21 +563,36 @@ export class UI {
     if (v) this.drawScoreboard();
   }
 
+  // Se construye una vez y luego solo cambian textos y objetos: rehacer el HTML
+  // recargaba los retratos e iconos en cada refresco y parpadeaban.
   drawScoreboard() {
-    const g = this.g;
-    const row = (h) => `<tr class="${h.isPlayer ? 'me' : ''}${h.alive ? '' : ' dead'}">
-      <td class="sbHero"><span class="sbPort" style="background:radial-gradient(circle at 35% 30%, ${h.def.color}, #1a1626 80%)">${portrait(h.def)}</span>${g.label ? g.label(h) : h.name}</td>
-      <td>${h.level}</td><td>${h.kills} / ${h.deaths} / ${h.assists}</td><td>${h.cs}</td>
-      <td class="sbItems">${h.items.map((id) => `<span>${itemIcon(id, ITEMS[id].icon)}</span>`).join('')}</td>
-      <td>${h.alive ? '' : '💀 ' + Math.ceil(h.deadTimer)}</td></tr>`;
-    const team = (t, name) => {
-      const hs = g.heroes.filter((h) => h.team === t);
-      const k = hs.reduce((a, h) => a + h.kills, 0);
+    const g = this.g, sb = $('scoreboard');
+    const order = ['blue', 'red'].flatMap((t) => g.heroes.filter((h) => h.team === t));
+    if (!this.sbHeroes || this.sbHeroes.length !== order.length || this.sbHeroes.some((h, i) => h !== order[i])) {
+      this.sbHeroes = order;
+      const row = (h) => `<tr data-i="${order.indexOf(h)}"${h.isPlayer ? ' class="me"' : ''}>
+        <td class="sbHero"><span class="sbPort" style="background:radial-gradient(circle at 35% 30%, ${h.def.color}, #1a1626 80%)">${portrait(h.def)}</span>${g.label ? g.label(h) : h.name}</td>
+        <td></td><td></td><td></td><td class="sbItems"></td><td></td></tr>`;
+      const team = (t, name) => `<div class="sbTeam ${t}"><div class="sbHead"><b>${name}</b><span></span></div>
+        <table><tr><th>Héroe</th><th>Nv</th><th>K / M / A</th><th>Súbd.</th><th>Objetos</th><th></th></tr>${order.filter((h) => h.team === t).map(row).join('')}</table></div>`;
+      sb.innerHTML = team('blue', 'Blood Hawks') + team('red', 'Legión de Lorik');
+      this.sbRows = order.map((h, i) => ({ tr: sb.querySelector(`tr[data-i="${i}"]`), items: null }));
+    }
+    const set = (el, v) => { v = String(v); if (el.textContent !== v) el.textContent = v; };
+    order.forEach((h, i) => {
+      const r = this.sbRows[i], td = r.tr.children;
+      r.tr.classList.toggle('dead', !h.alive);
+      set(td[1], h.level); set(td[2], `${h.kills} / ${h.deaths} / ${h.assists}`); set(td[3], h.cs);
+      set(td[5], h.alive ? '' : '💀 ' + Math.ceil(h.deadTimer));
+      const key = h.items.join(',');
+      if (r.items !== key) { r.items = key; td[4].innerHTML = h.items.map((id) => `<span>${itemIcon(id, ITEMS[id].icon)}</span>`).join(''); }
+    });
+    sb.querySelectorAll('.sbTeam').forEach((el) => {
+      const t = el.classList.contains('blue') ? 'blue' : 'red';
+      const k = order.filter((h) => h.team === t).reduce((a, h) => a + h.kills, 0);
       const towers = g.units.filter((u) => u.kind === 'tower' && u.team !== t && !u.alive).length;
-      return `<div class="sbTeam ${t}"><div class="sbHead"><b>${name}</b><span>⚔️ ${k} · 🏰 ${towers} torres</span></div>
-        <table><tr><th>Héroe</th><th>Nv</th><th>K / M / A</th><th>Súbd.</th><th>Objetos</th><th></th></tr>${hs.map(row).join('')}</table></div>`;
-    };
-    $('scoreboard').innerHTML = team('blue', 'Blood Hawks') + team('red', 'Legión de Lorik');
+      set(el.querySelector('.sbHead span'), `⚔️ ${k} · 🏰 ${towers} torres`);
+    });
   }
 
   // Bendiciones de la jungla activas del jugador

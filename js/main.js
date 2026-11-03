@@ -197,6 +197,8 @@ window.addEventListener('keydown', (e) => {
     else togglePause();
     return;
   }
+  // Tab: marcador mientras se mantiene (también en pausa, para que el navegador no mueva el foco)
+  if (k === 'tab') { e.preventDefault(); if (!e.repeat && !ui.scoreOpen) ui.showScoreboard(true); return; }
   if (game.paused) return;
   const idx = ['q', 'w', 'e', 'r'].indexOf(k);
   if (idx >= 0) {
@@ -205,7 +207,6 @@ window.addEventListener('keydown', (e) => {
     else if (!e.repeat) selectAbility(idx);
     return;
   }
-  if (k === 'tab') { e.preventDefault(); if (!e.repeat && !ui.scoreOpen) ui.showScoreboard(true); return; }
   if (k === 'p') ui.toggleShop();
   else if (k === 'b') game.startRecall(game.player);
   else if (k === '1') game.usePotion(game.player);
