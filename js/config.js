@@ -72,6 +72,7 @@ export function xpToNext(level) {
 export const HEROES = {
   josephine: {
     id: 'josephine',
+    glb: { url: 'models/heroes/josephine.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
     name: 'Josephine',
     title: 'Paladina de la Luz · Fundadora de los Blood Hawks',
     role: 'Soporte / Tanque',
@@ -202,6 +203,7 @@ export const HEROES = {
 
   kouji: {
     id: 'kouji',
+    glb: { url: 'models/heroes/kouji.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
     name: 'Kouji Kitaeda',
     title: 'Cazador arcano del clan Kitaeda',
     role: 'Tirador',
@@ -236,6 +238,7 @@ export const HEROES = {
 
   grimdarkus: {
     id: 'grimdarkus',
+    glb: { url: 'models/heroes/grimdarkus.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
     name: 'Grimdarkus II',
     title: 'Emperador de Aurane · El Prodigio de Terra Mortis',
     role: 'Tanque',
@@ -270,6 +273,7 @@ export const HEROES = {
 
   ikaruus: {
     id: 'ikaruus',
+    glb: { url: 'models/heroes/ikaruus.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
     name: 'Ikaruus Rukhu',
     title: 'Samurái de Kugane',
     role: 'Asesino',

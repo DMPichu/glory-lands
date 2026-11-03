@@ -37,13 +37,13 @@ print('subida', path)
 # 2. lanzar la generación (forma + textura)
 fd = {'path': path, 'meta': {'_type': 'gradio.FileData'}, 'orig_name': 'input.png'}
 data = {'data': ['', fd, None, None, None, None, 30, 5.0, 1234, 256, True, 8000, False]}
-req = urllib.request.Request(BASE + '/call/" + ENDPOINT + "', data=json.dumps(data).encode(), headers={'Content-Type': 'application/json'})
+req = urllib.request.Request(BASE + '/call/' + ENDPOINT, data=json.dumps(data).encode(), headers={'Content-Type': 'application/json'})
 ev = json.loads(urllib.request.urlopen(req, timeout=120).read())['event_id']
 print('evento', ev)
 
 # 3. esperar el resultado (flujo SSE)
 t0 = time.time()
-resp = urllib.request.urlopen(BASE + f'/call/" + ENDPOINT + "/{ev}', timeout=900)
+resp = urllib.request.urlopen(BASE + f'/call/{ENDPOINT}/{ev}', timeout=900)
 event, result = None, None
 for raw in resp:
     line = raw.decode('utf-8', 'replace').strip()

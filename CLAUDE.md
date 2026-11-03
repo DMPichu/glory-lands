@@ -101,7 +101,9 @@ Hecho: Hermes (conectado en `roster.js`). Para otro héroe, copia `hermes.py` y 
 
 1. `python tools/hunyuan3d.py <ilustración de cuerpo entero> <carpeta>`: envía la imagen a la demo pública de Hunyuan3D-2 y descarga `white_mesh.glb` (solo forma; la textura de la demo fallaba). **Pide permiso a la dueña antes de enviar sus imágenes.**
 2. `blender -b --factory-startup --python tools/blender/ia_heroe.py -- <white_mesh.glb> <ilustración> models/heroes/<id>.glb <Nombre> 30000 <izq,der,arriba,abajo> <centro_cabeza_x> <ensanche>`: quita la peana, reduce a 30.000 caras, pinta la ilustración proyectada desde delante (recuadro del personaje y centro de la cabeza en coordenadas 0-1 de la imagen; ensanche ≈ 1,3), esqueleto común con pesos por cercanía y animaciones.
-3. Revisa con un render (o en `tools/galeria.html`) y ajusta el recuadro, el centro y el ensanche hasta que el dibujo encaje. Hecho: Cabbo (`0.109,0.849,0.045,0.962 0.463 1.3`).
+   Sin los últimos argumentos el encaje es automático: detecta la silueta del personaje en el dibujo, toma la vertical del recuadro y busca la posición y la escala horizontal que maximizan la coincidencia de siluetas (IoU); el fondo se rellena con el color del personaje más cercano (difuminado) para que lo que sobresale no salga blanco.
+3. Revisa en `tools/galeria.html`. Hechos así: Belian, Lucille, Esperanza, Slinxi, Umi, Xeluna, Candle, Konta, Kouji, Grimdarkus, Ikaruus, Josephine y Zeflie (automático) y Cabbo (manual: `0.109,0.849,0.045,0.962 0.463 1.3`). Pendiente: Zestari (la demo devolvía error, probablemente cuota agotada).
+4. Límite: la textura es la ilustración proyectada desde delante; por los lados y por detrás se estira. Con modelos de Tripo o Meshy (forma y textura completas) bastaría con el esqueleto: pasarlos por `ia_heroe.py` sin la proyección.
 
 ### Conectar un modelo de VRoid (.vrm)
 

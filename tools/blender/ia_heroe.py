@@ -15,9 +15,9 @@ args = sys.argv[sys.argv.index('--') + 1:]
 SRC, IMG, OUT, NAME = args[:4]
 FACES = int(args[4]) if len(args) > 4 else 30000
 # recuadro del personaje en la ilustración (izq, der, arriba, abajo; de 0 a 1 desde arriba a la izquierda)
-BOX = [float(x) for x in args[5].split(',')] if len(args) > 5 else None
-HEAD_U = float(args[6]) if len(args) > 6 else None   # centro de la cabeza en la ilustración (0 izq, 1 der)
-WIDEN = float(args[7]) if len(args) > 7 else 1.0     # cuánto más ancha es la malla que el dibujo
+BOX = [float(x) for x in args[5].split(',')] if len(args) > 5 and args[5] != 'auto' else None
+HEAD_U = float(args[6]) if len(args) > 6 and args[6] != 'auto' else None   # centro de la cabeza en la ilustración (0 izq, 1 der)
+WIDEN = float(args[7]) if len(args) > 7 else None    # cuánto más ancha es la malla que el dibujo (None = se calcula)
 import base  # noqa: E402
 base.OUT = OUT
 
@@ -77,10 +77,14 @@ W, H = img.size
 px = np.empty(W * H * 4, dtype=np.float32)
 img.pixels.foreach_get(px)
 px = px.reshape(H, W, 4)[:, :, :3]                      # fila 0 = abajo
-corners = np.array([px[2, 2], px[2, -3], px[-3, 2], px[-3, -3]]).mean(axis=0)
-mask = np.abs(px - corners).sum(axis=2) > 0.18
+edge = max(4, W // 30)
+bgL, bgR = px[:, :edge].mean(axis=1), px[:, -edge:].mean(axis=1)
+tt = np.linspace(0, 1, W)[None, :, None]
+bgimg = bgL[:, None, :] * (1 - tt) + bgR[:, None, :] * tt
+sat = px.max(axis=2) - px.min(axis=2)
+mask = (np.abs(px - bgimg).sum(axis=2) > 0.2) | ((sat > 0.2) & (np.abs(px - bgimg).sum(axis=2) > 0.08))
 rows, cols = np.where(mask)
-r0, r1 = np.percentile(rows, 0.5), np.percentile(rows, 99.5)
+r0, r1 = np.percentile(rows, 0.15), np.percentile(rows, 99.85)
 c0, c1 = np.percentile(cols, 0.5), np.percentile(cols, 99.5)
 print('silueta en la imagen', int(c0), int(c1), int(r0), int(r1), 'de', W, H)
 u0, u1, v0, v1 = c0 / W, c1 / W, r0 / H, r1 / H
@@ -90,16 +94,71 @@ if BOX:
 # Encaje uniforme: la escala vertical es la del recuadro; la horizontal, la misma
 # corregida por WIDEN (las mallas de la IA suelen salir más anchas que el dibujo), y
 # se alinea el centro de la cabeza de la malla con el de la ilustración (HEAD_U).
-ku = (v1 - v0) * (H / W) / 2.3 / WIDEN
-top = [v.co.x for v in obj.data.vertices if v.co.z > 2.0]
-xh = sum(top) / max(1, len(top))
-uh = HEAD_U if HEAD_U is not None else (u0 + u1) / 2
+# Encaje horizontal por siluetas: se proyectan los vértices de la malla (x, z) sobre
+# la imagen con u = a + b·x y se buscan a y b que maximizan la coincidencia (IoU)
+# entre la silueta de la malla y la del personaje en el dibujo. La vertical sale del
+# recuadro (de los pies a lo más alto en los dos).
+hs = 160
+ws = max(16, int(W * hs / H))
+ry = (np.arange(hs) * H / hs).astype(int)
+rx = (np.arange(ws) * W / ws).astype(int)
+small = mask[ry][:, rx]
+rng = np.random.default_rng(0)
+allv = np.array([(v.co.x, v.co.z) for v in obj.data.vertices])
+pts = allv[rng.choice(len(allv), min(4000, len(allv)), replace=False)]
+pv = ((v0 + pts[:, 1] / 2.3 * (v1 - v0)) * hs).astype(int).clip(0, hs - 1)
+b0 = (v1 - v0) * (H / W) / 2.3
+best = (-1, 0.5, b0)
+for b in b0 * np.linspace(0.55, 1.5, 39):
+    for a in np.linspace(0.0, 1.0, 101):
+        pu = ((a + pts[:, 0] * b) * ws).astype(int)
+        ok = (pu >= 0) & (pu < ws)
+        grid = np.zeros((hs, ws), bool)
+        grid[pv[ok], pu[ok]] = True
+        grid = grid | np.roll(grid, 1, 0) | np.roll(grid, -1, 0) | np.roll(grid, 1, 1) | np.roll(grid, -1, 1)
+        inter = (grid & small).sum()
+        iou = inter / max(1, (grid | small).sum()) - 0.5 * (~ok).mean()
+        if iou > best[0]:
+            best = (iou, a, b)
+iou, uh, ku = best
+xh = 0.0
+print('encaje: recuadro', round(u0, 3), round(u1, 3), round(v0, 3), round(v1, 3), 'IoU', round(float(iou), 3), 'a', round(float(uh), 3), 'b/b0', round(float(ku / b0), 2))
 uv = obj.data.uv_layers.new(name='Frente')
 obj.data.uv_layers.active = uv
 for poly in obj.data.polygons:
     for li in poly.loop_indices:
         co = obj.data.vertices[obj.data.loops[li].vertex_index].co
-        uv.data[li].uv = (uh + (co.x - xh) * ku, v0 + co.z / 2.3 * (v1 - v0))
+        uv.data[li].uv = (uh + co.x * ku, v0 + co.z / 2.3 * (v1 - v0))
+# Relleno de bordes: cada píxel de fondo toma el color del píxel del personaje más
+# cercano en su fila (y, en filas sin personaje, el de la fila más cercana). Así las
+# partes de la malla que se salen de la silueta del dibujo no se pintan de fondo.
+cols = np.arange(W)[None, :]
+left = np.maximum.accumulate(np.where(mask, cols, -1), axis=1)
+right = np.flip(np.minimum.accumulate(np.flip(np.where(mask, cols, W * 9), axis=1), axis=1), axis=1)
+has_l, has_r = left >= 0, right < W
+pick = np.where(has_l & (~has_r | (cols - left <= right - cols)), left, right)
+rowok = mask.any(axis=1)
+pick = np.clip(pick, 0, W - 1)
+filled = np.take_along_axis(px, pick[:, :, None].repeat(3, axis=2), axis=1)
+filled[mask] = px[mask]
+rid = np.where(rowok)[0]
+near = rid[np.clip(np.searchsorted(rid, np.arange(H)), 0, len(rid) - 1)]
+filled = filled[np.where(rowok, np.arange(H), near)]
+# se difumina lo rellenado (no el dibujo) para que no queden rayas
+def blur(a, k):
+    c = np.cumsum(np.pad(a, ((k + 1, k), (k + 1, k), (0, 0)), mode='edge'), axis=0)
+    a = (c[2 * k + 1:] - c[:-2 * k - 1]) / (2 * k + 1)
+    c = np.cumsum(a, axis=1)
+    return (c[:, 2 * k + 1:] - c[:, :-2 * k - 1]) / (2 * k + 1)
+soft = blur(filled, max(3, W // 60))
+filled = np.where(mask[:, :, None], px, soft[:H, :W])
+padded = bpy.data.images.new(NAME + '_textura', W, H)
+rgba = np.concatenate([filled, np.ones((H, W, 1), dtype=np.float32)], axis=2)
+padded.pixels.foreach_set(rgba.astype(np.float32).ravel())
+padded.file_format = 'JPEG'
+padded.pack()
+img = padded
+
 mat = bpy.data.materials.new('Ilustracion')
 mat.use_nodes = True
 nodes = mat.node_tree.nodes
