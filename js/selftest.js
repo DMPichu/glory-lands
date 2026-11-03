@@ -49,7 +49,9 @@ export async function runSelftest(makeGame, minutes = 4) {
     const res = [];
     try {
       for (let i = 0; i < 4; i++) {
-        u.mp = u.maxMp; u.abilities[i].cd = 0; u.dash = null; u.channel = null;
+        u.mp = u.maxMp; u.abilities[i].cd = 0; u.dash = null; u.channel = null; u.knock = null;
+        // que ningún bot de la partida de prueba lo deje aturdido justo antes de lanzar
+        u.buffs = u.buffs.filter((b) => !['stun', 'root', 'taunt', 'banish'].includes(b.type));
         if (!e.alive) { e.alive = true; e.hp = e.maxHp; }
         const before = e.hp;
         const ok = g.castAbility(u, i, e.pos.clone(), e);
