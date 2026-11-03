@@ -97,6 +97,12 @@ Identificadores de héroe: `josephine`, `fotsor`, `yeslie`, `astrid`, `kouji`, `
 ```
 Hecho: Hermes (conectado en `roster.js`). Para otro héroe, copia `hermes.py` y cambia el cuerpo, la cabeza, las piezas y el arma. La dueña también tiene BlenderMCP instalado (Blender con el servidor encendido en el puerto 9876) por si se quiere trabajar en su Blender abierto.
 
+### Modelos generados con IA (Hunyuan3D-2)
+
+1. `python tools/hunyuan3d.py <ilustración de cuerpo entero> <carpeta>`: envía la imagen a la demo pública de Hunyuan3D-2 y descarga `white_mesh.glb` (solo forma; la textura de la demo fallaba). **Pide permiso a la dueña antes de enviar sus imágenes.**
+2. `blender -b --factory-startup --python tools/blender/ia_heroe.py -- <white_mesh.glb> <ilustración> models/heroes/<id>.glb <Nombre> 30000 <izq,der,arriba,abajo> <centro_cabeza_x> <ensanche>`: quita la peana, reduce a 30.000 caras, pinta la ilustración proyectada desde delante (recuadro del personaje y centro de la cabeza en coordenadas 0-1 de la imagen; ensanche ≈ 1,3), esqueleto común con pesos por cercanía y animaciones.
+3. Revisa con un render (o en `tools/galeria.html`) y ajusta el recuadro, el centro y el ensanche hasta que el dibujo encaje. Hecho: Cabbo (`0.109,0.849,0.045,0.962 0.463 1.3`).
+
 ### Conectar un modelo de VRoid (.vrm)
 
 La dueña crea los héroes en VRoid Studio siguiendo `GUIA_VROID.md` y sube el `.vrm` a `_entrada/`.

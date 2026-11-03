@@ -218,15 +218,41 @@ def _armature(tail):
     return rig
 
 
-def finish_and_export(body_obj, name, tail=False, attack='slash'):
+def nearest_weights(obj, rig):
+    """Pesos por cercanía a cada hueso (para mallas generadas por IA, donde los pesos
+    automáticos de Blender suelen fallar): los dos huesos más cercanos, con 1/d^4."""
+    segs = [(bn.name, bn.head_local.copy(), bn.tail_local.copy()) for bn in rig.data.bones]
+    groups = {n: obj.vertex_groups.new(name=n) for n, _, _ in segs}
+    mw = obj.matrix_world
+    for v in obj.data.vertices:
+        p = mw @ v.co
+        ds = []
+        for n, h, t in segs:
+            ab = t - h
+            k = max(0.0, min(1.0, (p - h).dot(ab) / max(1e-9, ab.dot(ab))))
+            ds.append(((p - (h + ab * k)).length, n))
+        ds.sort()
+        w = [(1 / (d ** 4 + 1e-6), n) for d, n in ds[:2]]
+        tot = sum(x for x, _ in w)
+        for x, n in w:
+            groups[n].add([v.index], x / tot, 'REPLACE')
+    obj.parent = rig
+    obj.modifiers.new('Armature', 'ARMATURE').object = rig
+
+
+def finish_and_export(body_obj, name, tail=False, attack='slash', weights='auto', image_format='AUTO'):
     """Esqueleto, pesos, une las piezas, anima y exporta. attack: 'slash' (golpe con el
-    brazo derecho) o 'cast' (lanza un hechizo con los dos brazos hacia delante)."""
+    brazo derecho) o 'cast' (lanza un hechizo con los dos brazos hacia delante).
+    weights: 'auto' (pesos automáticos de Blender) o 'nearest' (por cercanía)."""
     rig = _armature(tail)
     bpy.ops.object.select_all(action='DESELECT')
     body_obj.select_set(True)
     rig.select_set(True)
     bpy.context.view_layer.objects.active = rig
-    bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+    if weights == 'nearest':
+        nearest_weights(body_obj, rig)
+    else:
+        bpy.ops.object.parent_set(type='ARMATURE_AUTO')
     if len(body_obj.vertex_groups) < 5:
         print('AVISO: pesos automáticos fallidos, se usan envolventes')
         bpy.ops.object.parent_set(type='ARMATURE_ENVELOPE')
@@ -242,7 +268,8 @@ def finish_and_export(body_obj, name, tail=False, attack='slash'):
         obj.select_set(True)
     body_obj.select_set(True)
     bpy.context.view_layer.objects.active = body_obj
-    bpy.ops.object.join()
+    if parts:
+        bpy.ops.object.join()
     body_obj.name = body_obj.data.name = name
     for p in body_obj.data.polygons:
         p.use_smooth = True
@@ -345,7 +372,8 @@ def finish_and_export(body_obj, name, tail=False, attack='slash'):
     rig.select_set(True)
     body_obj.select_set(True)
     bpy.ops.export_scene.gltf(filepath=OUT, export_format='GLB', use_selection=True,
-                              export_animation_mode='ACTIONS', export_anim_single_armature=True, export_yup=True)
+                              export_animation_mode='ACTIONS', export_anim_single_armature=True, export_yup=True,
+                              export_image_format=image_format)
     tris = sum(len(p.vertices) - 2 for p in body_obj.data.polygons)
     print('EXPORTADO', OUT, 'triángulos:', tris)
 
@@ -368,12 +396,14 @@ def cat_head(H, fur, muzzle, eye_hex, inner=0xe8a0a8, big_ears=1.0):
             box(H + Vector((s * 0.16, -0.19, -0.06 + k * 0.02)), (0.16, 0.004, 0.004), material('Bigote', 0xf4f0ea), 'head', rot=(0, k * s * 0.15, 0))
 
 
-def witch_hat(H, mat, band, tilt=0.25):
-    cyl(H + Vector((0, 0, 0.16)), 0.44, 0.02, mat, 'head', verts=40)
-    cyl(H + Vector((0, 0, 0.22)), 0.2, 0.12, mat, 'head', verts=32)
-    torus(H + Vector((0, 0, 0.19)), 0.2, 0.022, band, 'head')
-    cone(H + Vector((0.05, 0.05, 0.5)), 0.2, 0.0, 0.5, mat, 'head', (tilt, 0.25, 1), verts=32)
-    cone(H + Vector((0.2, 0.17, 0.78)), 0.075, 0.0, 0.2, mat, 'head', (1, 0.6, 0.4), verts=16)
+def witch_hat(H, mat, band, tilt=0.25, size=1.0):
+    k = size
+    cyl(H + Vector((0, 0, 0.16)), 0.44 * k, 0.02, mat, 'head', verts=48)
+    cone(H + Vector((0, 0, 0.16)), 0.46 * k, 0.4 * k, 0.03, mat, 'head', verts=48)        # borde caído del ala
+    cyl(H + Vector((0, 0, 0.22)), 0.21 * k, 0.12, mat, 'head', verts=32)
+    torus(H + Vector((0, 0, 0.2)), 0.21 * k, 0.03, band, 'head')
+    cone(H + Vector((0.05 * k, 0.05 * k, 0.22 + 0.3 * k)), 0.21 * k, 0.07 * k, 0.5 * k, mat, 'head', (tilt, 0.25, 1), verts=32)
+    cone(H + Vector((0.22 * k, 0.16 * k, 0.5 + 0.3 * k)), 0.075 * k, 0.0, 0.32 * k, mat, 'head', (1, 0.5, -0.3), verts=16)
 
 
 def wide_hat(H, mat, band, feather=None):

@@ -330,6 +330,7 @@ const NEW = {
     ],
     build: ['heart', 'tear', 'boots', 'shield', 'aegis', 'cloak'], prio: [1, 0, 2],
     look: { skin: 0xd8a880, top: 0x6a2a7a, accent: 0xd04a3a, pants: 0x4a1e5a, weapon: 'fists', hat: 'helm', hatColor: 0xb8bcc8, hatAccent: 0x8a3a9a, bulky: true, pauldrons: true },
+    glb: { url: 'models/heroes/cabbo.glb', height: 2.4, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.5 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
   },
   // ------------------------------------------------------------ KONTA
   konta: {
