@@ -15,8 +15,8 @@ Un mismo héroe puede estar en los dos equipos; el de la Legión lleva colores o
 
 | Acción | Tecla |
 |---|---|
-| Moverse / atacar | Clic derecho (o izquierdo) |
-| Habilidades | **Q W E R**: mantén la tecla para ver el alcance y suéltala para lanzar hacia el cursor |
+| Moverse / atacar | **Clic izquierdo** (mantenerlo pulsado sigue al cursor) |
+| Habilidades | **Q W E R** elige la habilidad y muestra su alcance; **clic derecho** donde quieras que golpee. Las que se lanzan sobre uno mismo salen al momento. **Esc** o la misma tecla cancelan |
 | Marcador | **Tab** (mantener) |
 | Volver a la base | **B** (6 s sin moverse ni recibir daño) |
 | Mejorar habilidad | **Mayús + Q/W/E/R** o el botón **+** |
@@ -72,10 +72,12 @@ Cada héroe puede usar un modelo 3D animado en vez del hecho con formas básicas
 | `url` | Ruta del `.glb`. Puede ser un archivo propio, p. ej. `models/fotsor.glb`. |
 | `height` | Altura en el juego; el modelo se escala solo. |
 | `anims` | Nombre de la animación del archivo para `idle`, `walk`, `attack` y `death`. |
-| `tint` | Recolorea materiales por nombre (`color`, `emissive`, `r`, `m`). |
+| `hide` | Piezas del modelo que se esconden (armas o accesorios que no usa ese héroe). |
+| `tint` | Recolorea por nombre de pieza o de material (`color`, `solid` para color liso sin textura, `emissive`, `r`, `m`). |
+| `slim` | Proporciones esbeltas (alarga cuerpo y piernas y achica la cabeza). |
 | `keep` | Piezas del modelo básico que se pegan a un hueso, como las llamas de Fotsor. |
 
-Mientras carga (o si falla la carga), el héroe usa su modelo básico. El de ejemplo es **RobotExpressive** (CC0, de Tomás Laulhé), que se carga desde el repositorio de three.js. Para un esqueleto de verdad, sirven los paquetes gratuitos (CC0) de **KayKit** o de **Quaternius**. Si generas un modelo propio con IA (Meshy, Tripo…), puedes animarlo con **Mixamo**.
+Mientras carga (o si falla la carga), el héroe usa su modelo básico. Ahora todos los héroes y súbditos usan personajes de **KayKit** (CC0, de Kay Lousberg) recoloreados, en `models/kaykit/`; están en `HERO_MODELS` y `MODEL_GLB` de `js/config.js`. Para dar a un héroe su propio modelo, basta con cambiar su entrada. Si generas un modelo propio con IA (Meshy, Tripo…), puedes animarlo con **Mixamo**.
 
 ## Personalizar el juego
 

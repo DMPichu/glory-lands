@@ -131,20 +131,6 @@ export const HEROES = {
     ],
     build: ['fang', 'boots', 'ember', 'heart', 'thorns', 'katana'],
     prio: [0, 2, 1],
-    // Modelo animado (.glb). Prueba con RobotExpressive (CC0, Tomás Laulhé) desde el
-    // repositorio de three.js, teñido de hueso. Para usar otro, pon su ruta en 'url'
-    // (p. ej. 'models/fotsor.glb') y los nombres de sus animaciones en 'anims'.
-    glb: {
-      url: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
-      height: 2.3,
-      anims: { idle: 'Idle', walk: 'Running', attack: 'Punch', death: 'Death' },
-      tint: {
-        Main: { color: 0xece4cf, r: 0.8, m: 0 },
-        Grey: { color: 0x7a1626, r: 0.6 },
-        Black: { color: 0x2a1408, emissive: 0xff5a00, ei: 0.25 },
-      },
-      keep: [{ part: 'flames', bone: 'Head', pos: [0, 0.35, 0], scale: 1.4 }],
-    },
   },
 
   yeslie: {
@@ -416,6 +402,64 @@ export const HEROES = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// MODELOS 3D DE LOS HÉROES
+// ---------------------------------------------------------------------------
+// Personajes de los packs gratuitos de KayKit (Kay Lousberg, CC0), recortados y
+// comprimidos en models/kaykit/. Cada archivo trae todas las armas y accesorios:
+// cada héroe enseña solo los suyos ('show') y se le cambian los colores ('tint',
+// por nombre de pieza; el color multiplica la textura). Si un héroe tiene su propio
+// modelo en models/heroes/<id>.glb, basta con cambiar aquí su entrada.
+const KAYKIT_PARTS = {
+  knight: ['1H_Sword_Offhand', 'Badge_Shield', 'Rectangle_Shield', 'Round_Shield', 'Spike_Shield', '1H_Sword', '2H_Sword', 'Knight_Helmet', 'Knight_Cape'],
+  mage: ['Spellbook', 'Spellbook_open', '1H_Wand', '2H_Staff', 'Mage_Hat', 'Mage_Cape'],
+  rogue: ['Knife_Offhand', '1H_Crossbow', '2H_Crossbow', 'Knife', 'Throwable', 'Rogue_Cape'],
+  rogue_hooded: ['Knife_Offhand', '1H_Crossbow', '2H_Crossbow', 'Knife', 'Throwable', 'Rogue_Cape'],
+  barbarian: ['1H_Axe_Offhand', 'Barbarian_Round_Shield', '1H_Axe', '2H_Axe', 'Mug', 'Barbarian_Hat', 'Barbarian_Cape'],
+  skeleton_warrior: ['Skeleton_Warrior_Helmet', 'Skeleton_Warrior_Cloak'],
+  skeleton_minion: ['Skeleton_Minion_Cloak'],
+  skeleton_mage: ['Skeleton_Mage_Hat'],
+};
+function kaykit(base, show, attack, o = {}) {
+  return {
+    url: `models/kaykit/${base}.glb`,
+    height: o.height ?? 2.3,
+    hide: KAYKIT_PARTS[base].filter((p) => !show.includes(p)),
+    anims: { idle: 'Idle', walk: 'Running_A', attack, death: 'Death_A' },
+    attackTime: o.attackTime ?? 0.45,
+    tint: o.tint,
+    keep: o.keep,
+    slim: o.slim ?? true, // proporciones esbeltas (ver SLIM en models.js)
+  };
+}
+const glow = (color, ei = 0.8) => ({ color, emissive: color, ei });
+const solid = (color) => ({ color, solid: true });
+
+export const HERO_MODELS = {
+  josephine: kaykit('knight', ['1H_Sword', 'Round_Shield', 'Knight_Cape'], '1H_Melee_Attack_Slice_Diagonal', {
+    tint: { Knight_Cape: solid(0x3a5ad0), Knight_Body: { color: 0xfff1d8 }, Round_Shield: { color: 0xffe9a8 }, '1H_Sword': glow(0xfff2c0, 0.25) } }),
+  fotsor: kaykit('skeleton_warrior', ['Skeleton_Warrior_Cloak'], 'Unarmed_Melee_Attack_Punch_A', {
+    tint: { Skeleton_Warrior_Cloak: solid(0x7a1626), Skeleton_Warrior_Eyes: glow(0xff6a00, 2) },
+    keep: [{ part: 'flames', bone: 'head', pos: [0, 0.45, 0], scale: 2.0 }] }),
+  yeslie: kaykit('mage', ['1H_Wand', 'Spellbook_open', 'Mage_Hat', 'Mage_Cape'], 'Spellcast_Shoot', {
+    tint: { Mage_Body: solid(0xf2f0f8), Mage_ArmLeft: solid(0xf2f0f8), Mage_ArmRight: solid(0xf2f0f8), Mage_Cape: solid(0x1e1b26), Mage_Hat: solid(0x7a3fb0), '1H_Wand': glow(0x7ff6ff, 1.2) } }),
+  astrid: kaykit('rogue', ['2H_Crossbow', 'Rogue_Cape'], '2H_Ranged_Shoot', {
+    tint: { Rogue_Body: solid(0x4a3428), Rogue_ArmLeft: solid(0x5a3e2b), Rogue_ArmRight: solid(0x5a3e2b), Rogue_LegLeft: solid(0x3a2a20), Rogue_LegRight: solid(0x3a2a20), Rogue_Cape: solid(0x2a4aa8), '2H_Crossbow': { color: 0x9aa0b0 } } }),
+  kouji: kaykit('rogue_hooded', ['1H_Crossbow', 'Rogue_Cape'], '1H_Ranged_Shoot', {
+    tint: { Rogue_Body: solid(0x7a5030), Rogue_ArmLeft: solid(0x6a4428), Rogue_ArmRight: solid(0x6a4428), Rogue_Cape: solid(0xc07a30), '1H_Crossbow': glow(0x6ae8ff, 0.4) } }),
+  grimdarkus: kaykit('knight', ['1H_Sword', 'Spike_Shield', 'Knight_Helmet', 'Knight_Cape'], '1H_Melee_Attack_Slice_Diagonal', {
+    height: 2.5,
+    tint: { '*': { color: 0x5a5662 }, Knight_Cape: solid(0xe8e2d0), Spike_Shield: { color: 0x3a3a44 } } }),
+  ikaruus: kaykit('rogue', ['Knife', 'Knife_Offhand'], 'Dualwield_Melee_Attack_Slice', {
+    tint: { Rogue_Body: solid(0xf4f0ea), Rogue_ArmLeft: solid(0xf4f0ea), Rogue_ArmRight: solid(0xf4f0ea), Rogue_LegLeft: solid(0x22222a), Rogue_LegRight: solid(0x22222a), Knife: glow(0xffd0e0, 0.4), Knife_Offhand: glow(0xffd0e0, 0.4) } }),
+  crixus: kaykit('barbarian', ['2H_Axe', 'Barbarian_Cape'], '2H_Melee_Attack_Chop', {
+    tint: { '*': { color: 0x5a6a62 }, Barbarian_Cape: solid(0x2a2a2e), '2H_Axe': glow(0x60ff90, 0.6) } }),
+  legna: kaykit('mage', ['2H_Staff', 'Mage_Hat', 'Mage_Cape'], 'Spellcast_Shoot', {
+    tint: { Mage_Body: solid(0xfffaf0), Mage_ArmLeft: solid(0xfffaf0), Mage_ArmRight: solid(0xfffaf0), Mage_Cape: solid(0x3a6ad0), Mage_Hat: solid(0xe0b33c), '2H_Staff': glow(0xffe08a, 0.6) } }),
+  catarina: kaykit('knight', ['2H_Sword', 'Knight_Cape'], '2H_Melee_Attack_Slice', {
+    tint: { Knight_Body: solid(0xcfe6ff), Knight_ArmLeft: solid(0xcfe6ff), Knight_ArmRight: solid(0xcfe6ff), Knight_Cape: solid(0xffffff), '2H_Sword': glow(0x9af0ff, 1.0) } }),
+};
+
 export const DIFFICULTY = {
   facil: { name: 'Fácil', dmg: 0.72, think: 0.45, gold: 0.8 },
   normal: { name: 'Normal', dmg: 1.0, think: 0.22, gold: 1.0 },
@@ -426,15 +470,17 @@ export const DIFFICULTY = {
 // el campo 'glb' de cada uno). Mismo formato que el 'glb' de Fotsor; null = modelo
 // hecho con formas básicas. Ver models/LEEME.md.
 export const MODEL_GLB = {
-  minion_blue_melee: null,   // guardia de la Orden (anims: idle, walk, attack, death)
-  minion_blue_ranged: null,  // clérigo de la Orden
-  minion_red_melee: null,    // cultista
-  minion_red_ranged: null,   // ángel corrompido
+  minion_blue_melee: kaykit('knight', ['1H_Sword', 'Badge_Shield', 'Knight_Helmet'], '1H_Melee_Attack_Chop', { height: 1.6, tint: { '*': { color: 0xd8e2ff } } }),
+  minion_blue_ranged: kaykit('mage', ['2H_Staff', 'Mage_Hat'], 'Spellcast_Shoot', { height: 1.6, tint: { Mage_Hat: solid(0x3a6ad0), '2H_Staff': glow(0xffe08a, 0.6) } }),
+  minion_red_melee: kaykit('skeleton_minion', ['Skeleton_Minion_Cloak'], '1H_Melee_Attack_Chop', { height: 1.6, tint: { Skeleton_Minion_Cloak: solid(0x5a1020), Skeleton_Minion_Eyes: glow(0xff2030, 2) } }),
+  minion_red_ranged: kaykit('skeleton_mage', ['Skeleton_Mage_Hat'], 'Spellcast_Shoot', { height: 1.6, tint: { Skeleton_Mage_Hat: solid(0x5a1a80), Skeleton_Mage_Eyes: glow(0xd040ff, 2) } }),
   tower_blue: null,          // torre de los Blood Hawks (sin animaciones)
   tower_red: null,           // obelisco de la Legión
   nexus: null,               // Torre de Zugri
   boss: null,                // Lorik sobre su santuario (anims opcionales)
 };
+
+for (const [id, spec] of Object.entries(HERO_MODELS)) HEROES[id].glb = spec;
 
 export const HERO_ORDER = ['josephine', 'fotsor', 'yeslie', 'astrid', 'kouji', 'grimdarkus', 'ikaruus', 'crixus', 'legna', 'catarina'];
 
