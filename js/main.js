@@ -97,6 +97,8 @@ function start() {
     resize();
     requestAnimationFrame(frame);
   }
+  // ?vrm=<archivo> prueba un modelo de VRoid en el héroe elegido sin tocar config.js
+  if (params.get('vrm')) HEROES[selected].glb = { url: params.get('vrm'), height: Number(params.get('h')) || 2.2 };
   game = new Game({ heroId: selected, mode, difficulty, autoLevel: $('autoLevel').checked, auto: params.get('auto') === '1' });
   playMusic('batalla');
   game.on('coreExposed', ({ core }) => { if (core.kind === 'boss') playMusic('lorik'); });

@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { MAP, LANES, LAYOUT, MODEL_GLB, CAMPS, EPIC_CAMPS, HEROES } from './config.js';
 import { distToLanes, laneLength, lanePoint } from './map.js';
 import { HERO_BUILDERS_V2, buildFromLook, stylize } from './heroes.js';
@@ -769,7 +770,7 @@ export function buildHeroModel(id, corrupted, glb) {
   const m = HERO_BUILDERS_V2[id] ? HERO_BUILDERS_V2[id]() : look ? buildFromLook(look) : HERO_BUILDERS[id]();
   if (HERO_BUILDERS_V2[id] || look) stylize(m.group);
   if (corrupted) corrupt(m.group);
-  if (glb) upgradeToGLB(m, glb, corrupted);
+  if (glb) (/\.vrm$/i.test(glb.url) ? upgradeToVRM : upgradeToGLB)(m, glb, corrupted);
   return m;
 }
 
@@ -982,8 +983,124 @@ export function corrupt(group) {
   });
 }
 
+// --- Modelos VRM (VRoid Studio) -------------------------------------------------
+// Un héroe puede usar un .vrm exportado de VRoid Studio: glb: { url: 'models/heroes/x.vrm', height }.
+// Mantiene su sombreado anime (MToon) y el pelo y la ropa con física (spring bones).
+// VRoid no exporta animaciones, así que se animan los huesos aquí: reposo con
+// respiración, correr, golpe y parpadeo. La muerte la hace el juego (cae el grupo).
+// Cada héroe interpreta su propia copia del archivo (los VRM no se pueden clonar);
+// el archivo se descarga una sola vez.
+const vrmLoader = new GLTFLoader();
+vrmLoader.register((parser) => new VRMLoaderPlugin(parser));
+const vrmFiles = new Map();
+function loadVRM(spec) {
+  if (!vrmFiles.has(spec.url)) {
+    vrmFiles.set(spec.url, fetch(spec.url).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); }));
+  }
+  return vrmFiles.get(spec.url)
+    .then((buf) => vrmLoader.parseAsync(buf, spec.url.replace(/[^/]*$/, '')))
+    .then((gltf) => {
+      const vrm = gltf.userData.vrm;
+      if (!vrm) throw new Error('el archivo no es un VRM');
+      VRMUtils.removeUnnecessaryVertices(gltf.scene);
+      (VRMUtils.combineSkeletons ?? VRMUtils.removeUnnecessaryJoints)?.(gltf.scene);
+      VRMUtils.rotateVRM0(vrm); // los VRM 0.x miran hacia -Z; el juego usa +Z
+      return vrm;
+    });
+}
+
+// Las armas del modelo básico pasan a las manos del VRM (VRoid no hace armas).
+// Se calcula su giro con el VRM aún en pose de T: el eje +Y del arma apunta hacia
+// el codo y el +Z hacia delante, igual que en la mano del modelo básico.
+function moveWeapons(m, vrm) {
+  m.group.updateMatrixWorld(true);
+  const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(m.group.getWorldQuaternion(new THREE.Quaternion()));
+  const gs = m.group.getWorldScale(new THREE.Vector3()).x;
+  for (const [part, handName, armName] of [['handR', 'rightHand', 'rightLowerArm'], ['handL', 'leftHand', 'leftLowerArm']]) {
+    const hand = m.parts?.[part];
+    const bone = vrm.humanoid.getRawBoneNode(handName), arm = vrm.humanoid.getRawBoneNode(armName);
+    if (!hand || !bone || !arm || !hand.children.length) continue;
+    const pb = bone.getWorldPosition(new THREE.Vector3());
+    const y = arm.getWorldPosition(new THREE.Vector3()).sub(pb).normalize();
+    const z = fwd.clone().sub(y.clone().multiplyScalar(fwd.dot(y))).normalize();
+    const x = new THREE.Vector3().crossVectors(y, z);
+    const world = new THREE.Matrix4().compose(pb, new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z)), new THREE.Vector3(gs, gs, gs));
+    const holder = new THREE.Object3D();
+    new THREE.Matrix4().copy(bone.matrixWorld).invert().multiply(world).decompose(holder.position, holder.quaternion, holder.scale);
+    bone.add(holder);
+    for (const w of [...hand.children]) holder.add(w);
+  }
+}
+
+function upgradeToVRM(m, spec, corrupted) {
+  loadVRM(spec).then((vrm) => {
+    const root = vrm.scene;
+    root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+    // la Legión: colores oscurecidos (cada héroe tiene su copia, se cambia en el sitio)
+    if (corrupted) {
+      root.traverse((o) => {
+        if (!o.isMesh) return;
+        for (const mt of [].concat(o.material)) {
+          if (mt.color) mt.color.lerp(VOID, 0.6).multiplyScalar(0.75);
+          if (mt.shadeColorFactor) mt.shadeColorFactor.lerp(VOID, 0.7).multiplyScalar(0.7);
+          if (mt.emissive && mt.emissive.getHex() === 0) mt.emissive.set(0x2a0010);
+        }
+      });
+    }
+    // altura: se mide en la pose inicial y se escala un envoltorio (no el VRM)
+    const wrap = new THREE.Group();
+    wrap.add(root);
+    root.updateMatrixWorld(true);
+    const size = new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3());
+    wrap.scale.setScalar((spec.height ?? 2.2) / Math.max(0.01, size.y));
+    wrap.rotation.y = spec.rotY ?? 0;
+    if (m.parts?.body) m.parts.body.visible = false;
+    m.group.add(wrap);
+    if (spec.weapons !== false) moveWeapons(m, vrm);
+    m.vrm = { vrm, wrap, lastT: null, blinkAt: 2 + Math.random() * 3, v0: vrm.meta?.metaVersion === '0', spec, springReady: false };
+    animateVRM(m, 0, false, 0);
+    loadedGLB.add(spec.url);
+  }).catch((e) => { failedGLB.set(spec.url, String(e?.message || e)); console.warn('No se pudo cargar el VRM', spec.url, e); });
+}
+
+function animateVRM(m, t, moving, attackT, speed = 1) {
+  const V = m.vrm, h = V.vrm.humanoid;
+  const dt = V.lastT === null ? 0 : Math.max(0, Math.min(0.1, t - V.lastT));
+  V.lastT = t;
+  // los VRM 0.x tienen invertidos los ejes x y z de los huesos normalizados
+  const s = V.v0 ? -1 : 1;
+  const rot = (name, x, y, z) => { const b = h.getNormalizedBoneNode(name); if (b) b.rotation.set(x * s, y, z * s); };
+  const w = moving ? Math.sin(t * 11 * speed) : 0;
+  const breath = Math.sin(t * 2);
+  const k = attackT > 0 ? Math.sin(Math.min(1, attackT) * Math.PI) : 0;
+  // piernas: zancada y rodilla
+  rot('leftUpperLeg', -w * 0.6, 0, 0);
+  rot('rightUpperLeg', w * 0.6, 0, 0);
+  rot('leftLowerLeg', Math.max(0, w) * 0.9, 0, 0);
+  rot('rightLowerLeg', Math.max(0, -w) * 0.9, 0, 0);
+  // brazos: de la pose en T a los costados, balanceo y golpe con el derecho
+  rot('leftUpperArm', w * 0.45, 0, -1.3 + breath * 0.02);
+  rot('rightUpperArm', -w * 0.45 - 1.5 * k, 0, 1.3 - breath * 0.02 - 0.15 * k);
+  rot('leftLowerArm', 0, 0.25, 0);
+  rot('rightLowerArm', 0, -0.25 + 0.2 * k, 0);
+  // tronco: respiración, inclinación al correr y giro al golpear
+  rot('spine', (moving ? 0.12 : 0) + breath * 0.015, 0.35 * k, 0);
+  rot('chest', breath * 0.02, 0, 0);
+  V.wrap.position.y = moving ? Math.abs(Math.sin(t * 11 * speed)) * 0.06 : 0;
+  // parpadeo
+  const em = V.vrm.expressionManager;
+  if (em) {
+    if (t > V.blinkAt + 0.15) V.blinkAt = t + 2 + Math.random() * 4;
+    em.setValue('blink', t > V.blinkAt ? Math.sin(((t - V.blinkAt) / 0.15) * Math.PI) : 0);
+  }
+  // la física del pelo y la ropa parte de la pose ya escalada y colocada
+  if (!V.springReady) { V.wrap.updateMatrixWorld(true); V.vrm.springBoneManager?.setInitState(); V.springReady = true; }
+  V.vrm.update(dt);
+}
+
 // Animación genérica de caminar / atacar
 export function animateModel(m, t, moving, attackT, speed = 1, dead = false) {
+  if (m.vrm) return dead ? undefined : animateVRM(m, t, moving, attackT, speed);
   if (m.glb) return animateGLB(m, t, moving, attackT, dead);
   const p = m.parts;
   if (!p || !p.legL) return;

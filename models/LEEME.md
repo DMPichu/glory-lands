@@ -1,6 +1,7 @@
 # Modelos 3D (.glb)
 
 - `heroes/<héroe>.glb`: uno por héroe, con animaciones de reposo, correr, ataque y muerte. Se conecta en el campo `glb` del héroe en `js/config.js`.
+- `heroes/<héroe>.vrm`: héroe hecho en VRoid Studio (ver `GUIA_VROID.md`). El juego lo anima solo y le pone el arma del héroe.
 - `<nombre>.glb`: súbditos, torres, Torre de Zugri, Lorik. Se conectan en `MODEL_GLB` de `js/config.js`.
 
 Requisitos: glTF binario con texturas dentro, 5.000 a 20.000 triángulos, menos de 5 MB, mirando hacia +Z y con los pies en y = 0 (la escala da igual). El equipo rojo usa el mismo modelo oscurecido: no hace falta otra versión.

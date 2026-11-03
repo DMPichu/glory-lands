@@ -6,6 +6,9 @@
 // Ver img/LEEME.md y tokens/LEEME.md.
 
 const portraitUrls = (id) => [`img/retratos/${id}.webp`, `tokens/${id}.webp`];
+// archivos opcionales que ya se sabe que no existen (para no pedirlos cada vez que
+// se redibuja la interfaz)
+const missing = (window.__artMissing ||= new Set());
 
 // Icono de habilidad o pasiva con un halo del color del héroe
 export function abilityIcon(id, emoji, color) {
@@ -14,7 +17,8 @@ export function abilityIcon(id, emoji, color) {
 
 // Icono de objeto: el .webp si existe, si no el .svg (game-icons), si no el emoji
 export function itemIcon(id, emoji) {
-  return `<img class="iicon" src="img/objetos/${id}.webp" alt="" onerror="if(this.dataset.f)this.outerHTML='${emoji}';else{this.dataset.f=1;this.src='img/objetos/${id}.svg'}">`;
+  if (missing.has('o:' + id)) return `<img class="iicon" src="img/objetos/${id}.svg" alt="" onerror="this.outerHTML='${emoji}'">`;
+  return `<img class="iicon" src="img/objetos/${id}.webp" alt="" onerror="if(this.dataset.f)this.outerHTML='${emoji}';else{this.dataset.f=1;window.__artMissing.add('o:${id}');this.src='img/objetos/${id}.svg'}">`;
 }
 
 // Retrato redondo: retrato ilustrado, si no el token, si no la inicial
@@ -23,7 +27,8 @@ export function portrait(def) {
   const ready = cache.get(def.id);
   if (ready?.ok) return `${def.name[0]}<img class="tok" src="${ready.src}" alt="">`;
   const [a, b] = portraitUrls(def.id);
-  return `${def.name[0]}<img class="tok" src="${a}" alt="" onerror="if(this.dataset.f)this.remove();else{this.dataset.f=1;this.src='${b}'}">`;
+  if (missing.has('r:' + def.id)) return `${def.name[0]}<img class="tok" src="${b}" alt="" onerror="this.remove()">`;
+  return `${def.name[0]}<img class="tok" src="${a}" alt="" onerror="if(this.dataset.f)this.remove();else{this.dataset.f=1;window.__artMissing.add('r:${def.id}');this.src='${b}'}">`;
 }
 
 // Retratos ya cargados para dibujarlos en el lienzo (minimapa y barras de vida)

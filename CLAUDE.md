@@ -18,6 +18,7 @@ python -m http.server 8770          # y abrir http://localhost:8770
 - `?hero=<id>` empieza directamente con ese héroe; `&auto=1` lo maneja un bot; `&speed=4` acelera; `&bloom=0` quita el brillo; `&mute=1` silencia; `&mode=1v1` modo práctica.
 - **Autoprueba:** `http://localhost:8770/?selftest=1&minutes=4`. En unos segundos el título pasa a `SELFTEST OK` o `SELFTEST FAIL` y la página muestra un informe JSON: qué archivos opcionales encontró (retratos, tokens, iconos, audio, .glb), si las 4 habilidades de cada héroe funcionan y una partida 7 contra 7 simulada. **Ejecútala después de cada cambio.**
 - Sin navegador: `npm install && npx playwright install chromium && npm test` (abre la autoprueba en Chromium sin pantalla y sale con código 1 si falla). No se ha probado todavía en la nube; si falla la instalación, usa el navegador.
+- **Guía para crear héroes en VRoid Studio:** `GUIA_VROID.md`.
 - **Galería de modelos:** `http://localhost:8770/tools/galeria.html` muestra todos los héroes junto a su token (`?ids=hermes,umi` para elegir, `&red=1` para la versión de la Legión). Úsala para comprobar que cada modelo se parece a su token.
 - Comprobar sintaxis: `npm run check` (o `node --check js/<archivo>.js`).
 
@@ -64,6 +65,7 @@ Todo es opcional: si un archivo no existe, el juego usa lo de siempre y no da er
 | Efectos | `audio/efectos/<nombre>.ogg`, `<héroe>_<q/w/e/r>.ogg`, `<héroe>_ataque.ogg`, `<héroe>_critico.ogg` | | Automático (lista en `audio/LEEME.md`; ya hay 32 sonidos) |
 | Voces | `audio/voz/<héroe>_<elegir/definitiva/matar/morir>.ogg` | | Automático |
 | Modelo de héroe | `models/heroes/<héroe>.glb` | glTF binario con animaciones | Rellenar `glb` del héroe en `config.js` |
+| Héroe de VRoid | `models/heroes/<héroe>.vrm` | VRM 0.x o 1.0, menos de 10 MB | Rellenar `glb` del héroe (ver «Conectar un modelo de VRoid») |
 | Otros modelos | `models/<nombre>.glb` | | Rellenar la entrada de `MODEL_GLB` en `config.js` |
 
 Identificadores de héroe: `josephine`, `fotsor`, `yeslie`, `astrid`, `kouji`, `grimdarkus`, `ikaruus`, `crixus`, `legna`, `catarina` (y `lorik` para el jefe). Los de habilidades (`jos_q`, `kou_r`...) y objetos (`potion`, `sword`...) están en `config.js`.
@@ -86,6 +88,16 @@ Identificadores de héroe: `josephine`, `fotsor`, `yeslie`, `astrid`, `kouji`, `
    ```
 4. Para súbditos y estructuras, lo mismo en `MODEL_GLB` (`minion_blue_melee`, `tower_red`, `boss`...).
 5. Ejecuta la autoprueba: `assets.glbCargados` debe incluir la ruta y `glbFallidos` debe estar vacío. Mira el modelo en el juego (azul y rojo): si sale de lado o hundido, ajusta `rotY` o `height`.
+
+### Conectar un modelo de VRoid (.vrm)
+
+La dueña crea los héroes en VRoid Studio siguiendo `GUIA_VROID.md` y sube el `.vrm` a `_entrada/`.
+1. Pruébalo antes de conectarlo: `tools/galeria.html?ids=<id>&vrm=_entrada/<id>.vrm` (con `&anim=correr` o `&anim=atacar`) y en partida `?hero=<id>&vrm=_entrada/<id>.vrm`.
+2. Muévelo a `models/heroes/<id>.vrm` y pon en el héroe (en `HEROES` de `config.js` o en `NEW` de `roster.js`): `glb: { url: 'models/heroes/<id>.vrm', height: 2.2 }`. Opcional: `rotY`, `weapons: false` (para no pasarle el arma del modelo básico).
+3. Lo carga `upgradeToVRM` en `models.js` (three-vrm 3.3.7 desde el CDN): mantiene el sombreado MToon y la física del pelo, anima los huesos en `animateVRM` (reposo, correr, golpe, parpadeo; la muerte la hace el juego) y le pasa a las manos las armas de `handR`/`handL` del modelo básico. La Legión oscurece sus colores en el sitio (cada héroe interpreta su propia copia del archivo).
+4. Peso: hasta 10 MB por `.vrm` (excepción a la regla de 5 MB). Si pesa más, pide a la dueña que lo exporte con reducción de polígonos y atlas de 1024.
+5. Autoprueba: el `.vrm` debe salir en `assets.glbCargados`.
+6. Solo se ha probado con VRM 1.0. Con VRM 0.x `animateVRM` invierte los ejes x y z de los huesos (`v0`); si los brazos o las piernas se mueven al revés, el fallo estará ahí.
 
 ### Procesar `_entrada/`
 

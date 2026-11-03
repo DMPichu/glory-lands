@@ -1,6 +1,7 @@
 # Créditos
 
 ## Código y motor
+- [three-vrm](https://github.com/pixiv/three-vrm) 3.3.7, de pixiv (MIT): carga de los modelos de VRoid Studio (`.vrm`), desde el CDN.
 - [three.js](https://threejs.org/) 0.160 (licencia MIT), cargado desde jsDelivr.
 
 ## Modelos 3D

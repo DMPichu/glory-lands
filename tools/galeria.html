@@ -6,7 +6,9 @@
 <title>Galería de héroes</title>
 <!-- Galería de modelos: todos los héroes en fila junto a su token, para comparar.
      Abrir con el servidor del juego: http://localhost:8770/tools/galeria.html
-     ?ids=hermes,umi limita la lista; ?red=1 muestra la versión de la Legión. -->
+     ?ids=hermes,umi limita la lista; ?red=1 muestra la versión de la Legión;
+     ?vrm=models/heroes/belian.vrm&ids=belian prueba un VRM sin tocar config.js;
+     ?anim=correr muestra la carrera; ?anim=atacar, el momento del golpe. -->
 <style>
   body { margin: 0; background: #1a1626; color: #eee; font: 13px sans-serif; }
   canvas { display: block; }
@@ -17,7 +19,8 @@
 <script type="importmap">
   { "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.3.7/lib/three-vrm.module.min.js"
   } }
 </script>
 </head>
@@ -32,6 +35,7 @@ import { buildHeroModel, animateModel } from './js/models.js';
 const q = new URLSearchParams(location.search);
 const models = [];
 const ids = q.get('ids') ? q.get('ids').split(',') : HERO_ORDER;
+if (q.get('vrm')) for (const id of ids) HEROES[id].glb = { url: q.get('vrm'), height: Number(q.get('h')) || 2.2 };
 const perRow = Math.min(ids.length, Number(q.get('row')) || 9);
 const rows = Math.ceil(ids.length / perRow);
 const spanX = perRow * 1.4, spanY = rows * 1.45 + 0.2;
@@ -58,7 +62,7 @@ ids.forEach((id, i) => {
 });
 const toks = document.getElementById('toks');
 if (rows === 1) toks.innerHTML = ids.map((id) => `<div><img src="tokens/${id}.webp" alt=""><br>${HEROES[id]?.name || id}</div>`).join('');
-renderer.setAnimationLoop((ms) => { for (const m of models) animateModel(m, ms / 1000, false, 0); renderer.render(scene, cam); });
+renderer.setAnimationLoop((ms) => { const tt = ms / 1000; for (const m of models) animateModel(m, tt, q.get('anim') === 'correr', q.get('anim') === 'atacar' ? 0.5 : 0); renderer.render(scene, cam); });
 window.__galeria = 'ok';
 </script>
 </body>
