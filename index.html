@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glory Lands: La Batalla de Zugri</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    } }
+  </script>
+</head>
+<body>
+  <canvas id="view"></canvas>
+  <canvas id="overlay"></canvas>
+
+  <!-- MENÚ -->
+  <div id="menu">
+    <div class="menuInner">
+      <div class="logo">
+        <div class="sup">Glory Lands</div>
+        <h1>La Batalla de Zugri</h1>
+        <div class="sub">Blood Hawks contra la Legión de Lorik</div>
+      </div>
+      <h2>Elige a tu héroe</h2>
+      <div id="heroCards"></div>
+      <div id="heroDetail"></div>
+      <div class="opts">
+        <div class="modes">
+          <button class="modeBtn" data-mode="1v1">1 contra 1</button>
+          <button class="modeBtn" data-mode="2v2">2 contra 2 (con aliado bot)</button>
+        </div>
+        <div class="modes">
+          <button class="modeBtn diffBtn" data-diff="facil">Fácil</button>
+          <button class="modeBtn diffBtn" data-diff="normal">Normal</button>
+          <button class="modeBtn diffBtn" data-diff="dificil">Difícil</button>
+        </div>
+        <label class="chk"><input type="checkbox" id="autoLevel" checked> Mejorar habilidades automáticamente</label>
+        <label class="chk"><input type="checkbox" id="bloomOpt" checked> Efectos de brillo (desactívalo si el juego va lento)</label>
+        <button id="playBtn">¡A la batalla!</button>
+      </div>
+      <div class="controls">
+        <b>Controles:</b> clic derecho (o izquierdo) para moverte y atacar · <b>Q W E R</b> habilidades (se lanzan hacia el cursor) ·
+        <b>Mayús + Q/W/E/R</b> mejorar habilidad · <b>P</b> tienda (en tu base) · <b>1</b> poción · <b>S</b> detenerse · <b>rueda</b> zoom · <b>Esc</b> pausa
+      </div>
+      <div class="goal">🎯 Objetivo: destruye los dos obeliscos de la Legión y derrota a <b>Lorik</b> en su santuario. Protege la Torre de Zugri.</div>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" style="display:none">
+    <div id="topbar">
+      <span class="sb blue">Blood Hawks <b id="scoreBlue">0</b></span>
+      <span id="timer">00:00</span>
+      <span class="sb red"><b id="scoreRed">0</b> Legión de Lorik</span>
+    </div>
+    <div id="teams"></div>
+    <div id="messages"></div>
+
+    <div id="bottom">
+      <div id="portraitWrap">
+        <div id="portrait"></div>
+        <div id="level">1</div>
+        <div id="xpBar"><div id="xpFill"></div></div>
+      </div>
+      <div id="center">
+        <div id="heroName"></div>
+        <div id="abilities"></div>
+        <div id="skillPts"></div>
+        <div class="bar hp"><div id="hpFill"></div><div id="hpShield"></div><span id="hpText"></span></div>
+        <div class="bar mp"><div id="mpFill"></div><span id="mpText"></span></div>
+        <div id="furyBar" class="bar fury"><div id="furyFill"></div><span>Furia</span></div>
+        <div id="stats"></div>
+      </div>
+      <div id="inv">
+        <div id="items">
+          <div class="item empty"></div><div class="item empty"></div><div class="item empty"></div>
+          <div class="item empty"></div><div class="item empty"></div><div class="item empty"></div>
+        </div>
+        <div class="invRow">
+          <div id="potionSlot" class="item" title="Poción (tecla 1)">🧪<span id="potionCount">0</span></div>
+          <div class="goldBox">🪙 <span id="gold">0</span></div>
+          <button id="shopBtn">Tienda (P)</button>
+        </div>
+        <div id="kda"></div>
+      </div>
+      <canvas id="minimap" width="260" height="80"></canvas>
+    </div>
+
+    <div id="shop">
+      <div class="shopHead"><b>Tienda de Zugri</b><span>🪙 <span id="shopGold">0</span></span><button id="shopClose">✕</button></div>
+      <div id="shopWarn">Solo puedes comprar dentro de tu base (o mientras estás muerto).</div>
+      <div id="shopList"></div>
+    </div>
+
+    <div id="deadScreen"><div>Has caído</div><div class="small">Reapareces en <span id="deadTimer">0</span> s · puedes comprar en la tienda (P)</div></div>
+  </div>
+
+  <div id="tooltip"></div>
+
+  <div id="pause" class="modal">
+    <div class="box">
+      <h2>Pausa</h2>
+      <button id="resumeBtn">Continuar</button>
+      <button id="menuBtn">Volver al menú</button>
+    </div>
+  </div>
+
+  <div id="end" class="modal">
+    <div class="box">
+      <h1 id="endTitle"></h1>
+      <p id="endText"></p>
+      <div id="endStats"></div>
+      <button id="againBtn">Volver al menú</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
