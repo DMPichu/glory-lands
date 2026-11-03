@@ -4,6 +4,7 @@ MOBA 3D en el navegador ambientado en la campaña de rol **Glory Lands** (Blood 
 
 - Juego publicado: https://dmpichu.github.io/glory-lands/ (GitHub Pages desde `main`, raíz).
 - Qué falta conseguir para enriquecerlo: `REQUISITOS.md`.
+- Tokens, ilustraciones y sonidos ya preparados para los 17 héroes nuevos: `HEROES_NUEVOS.md`.
 - Para jugadores: `README.md`.
 
 **Idioma:** todo en español (interfaz, comentarios, commits). La dueña del proyecto escribe en español.
@@ -55,6 +56,7 @@ Todo es opcional: si un archivo no existe, el juego usa lo de siempre y no da er
 | Icono de habilidad | `img/habilidades/<id_habilidad>.svg` | SVG blanco | Automático (ya hay 50, de game-icons.net) |
 | Icono de objeto | `img/objetos/<id_objeto>.webp` (o `.svg`) | 128 × 128 | Automático (ya hay 19 `.svg` de game-icons; un `.webp` los sustituye) |
 | Música | `audio/musica/<menu/batalla/lorik/victoria/derrota>.ogg` (o `.mp3`) | | Automático |
+| Sonidos sin asignar | `audio/banco/<personaje>/` | `.ogg` | No se usan solos: copiarlos a `audio/efectos/` con el nombre de la habilidad |
 | Efectos | `audio/efectos/<nombre>.ogg`, `<héroe>_<q/w/e/r>.ogg`, `<héroe>_ataque.ogg`, `<héroe>_critico.ogg` | | Automático (lista en `audio/LEEME.md`; ya hay 32 sonidos) |
 | Voces | `audio/voz/<héroe>_<elegir/definitiva/matar/morir>.ogg` | | Automático |
 | Modelo de héroe | `models/heroes/<héroe>.glb` | glTF binario con animaciones | Rellenar `glb` del héroe en `config.js` |

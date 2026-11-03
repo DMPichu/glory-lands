@@ -62,9 +62,12 @@ Música y efectos de la carpeta `Glory Lands/Sonidos` de la campaña, recortados
 - `legna_q` ← Fuyumi/LightDrive.wav
 - `legna_r` ← Eris/ErisMassCW.wav
 - `catarina_q` ← Kouji/BorealShot.wav
+- `fuyumi_ataque` ← Fuyumi/Thrown.wav
+- `fuyumi_critico` ← Fuyumi/FuyumiCritical.wav
+- `audio/banco/` (sin asignar): Fuyumi/*, Vallentine/* y Eris/ErisCuraBaculo y ErisGarras1-3 con el nombre en minúsculas.
 
 ## Tokens
-Tokens de los personajes de la carpeta de la campaña (`Glory Lands/- IMAGES/1 -Tokens`), elegidos por la dueña del proyecto. **Origen y licencia por confirmar.**
+Tokens de los personajes de la carpeta de la campaña (`Glory Lands/- IMAGES/1 -Tokens`), elegidos por la dueña del proyecto (los de los 17 héroes nuevos, por Claude; ver `HEROES_NUEVOS.md`). Los de Zeflie, Zestari y Konta están recortados de sus ilustraciones (`- IMAGES/Zeflie and Zestari.png`, `ALIADOS/Zestari.png`, `ALIADOS/Konta.jpg`), que también están en `img/arte/`. **Origen y licencia por confirmar.**
 
 ## Lore y personajes
 Glory Lands y sus personajes pertenecen a la campaña de rol de DMPichu.

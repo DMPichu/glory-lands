@@ -5,3 +5,5 @@
 Para convertir: `python tools/prep_imagenes.py token "<archivo original>" <héroe>`.
 
 Héroes: josephine, fotsor, yeslie, astrid, kouji, grimdarkus, ikaruus, crixus, legna, catarina, lorik.
+
+Ya preparados para los héroes nuevos (ver `HEROES_NUEVOS.md`): hermes, polett, belian, vallentine, emmeline, lucille, esperanza, fuyumi, slinxi, umi, zeflie, zestari, xeluna, vrizahl, candle, cabbo, konta.
