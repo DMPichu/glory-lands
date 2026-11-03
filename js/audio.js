@@ -51,13 +51,17 @@ function load(base) {
 }
 
 // Efecto puntual. vol de 0 a 1; los repetidos muy seguidos se ignoran.
+// 'name' puede ser una lista: suena el primero que exista (p. ej. el ataque
+// propio del héroe y, si no hay, el genérico).
 export async function sfx(name, vol = 1, folder = 'efectos') {
   if (muted || !ensure()) return;
-  const key = folder + '/' + name;
+  const names = [].concat(name);
+  const key = folder + '/' + names[0];
   const now = performance.now();
   if (now - (lastPlay.get(key) || 0) < 60) return;
   lastPlay.set(key, now);
-  const buf = await load(`audio/${folder}/${name}`);
+  let buf = null;
+  for (const n of names) if ((buf = await load(`audio/${folder}/${n}`))) break;
   if (!buf || vol <= 0.01) return;
   const src = ctx.createBufferSource();
   src.buffer = buf;

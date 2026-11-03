@@ -189,4 +189,4 @@ body:has(#deadScreen[style*="flex"]) #view { filter: grayscale(0.85) brightness(
 #portrait, .cport, .tport { position: relative; overflow: hidden; }
 .tok { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 #teamsRed .tok { filter: saturate(0.55) brightness(0.72) sepia(0.25) hue-rotate(-25deg); }
-.iicon { width: 80%; height: 80%; object-fit: contain; }
+.iicon { width: 78%; height: 78%; object-fit: contain; filter: drop-shadow(0 0 4px rgba(232, 199, 127, 0.75)); }

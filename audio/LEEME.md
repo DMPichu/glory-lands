@@ -6,6 +6,8 @@ Formato `.ogg` (o `.mp3`). Si un archivo no está, simplemente no suena.
 
 **`efectos/`** comunes: `golpe_espada`, `golpe_puno`, `disparo_flecha`, `disparo_magia`, `disparo_arma_fuego`, `critico`, `torre_dispara`, `torre_destruida`, `heroe_muere`, `subir_nivel`, `oro`, `comprar`, `pocion`, `reaparecer`, `lorik_raices`, `lorik_invoca`, `aviso`, `clic`.
 
+**`efectos/`** propios de un héroe (si no existen, suena el común): `<héroe>_ataque` (ataque básico) y `<héroe>_critico`.
+
 **`efectos/`** de habilidades: `<héroe>_<q|w|e|r>` (por ejemplo `kouji_r.ogg`). Tabla con el nombre de cada habilidad en `REQUISITOS.md`.
 
 **`voz/`**: `<héroe>_elegir`, `<héroe>_definitiva`, `<héroe>_matar`, `<héroe>_morir`. Solo suenan las del héroe del jugador.

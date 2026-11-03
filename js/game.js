@@ -710,7 +710,7 @@ export class Game {
         if (Math.random() < 0.5) this.fx.spark(u.pos.clone().setY(1.2), 0xff4a6a, 0.1, 0.5, 1.5);
       }
       if (crit) {
-        this.sound('critico', t.pos, 0.8);
+        this.sound([`${u.heroId}_critico`, 'critico'], t.pos, 0.8);
         this.fx.impact(t.pos, 0xffe070, 0.8);
         if (u.isPlayer) this.shake(0.12);
       }
@@ -722,7 +722,7 @@ export class Game {
       const ranged0 = u.base.range > 4;
       const snd = !ranged0 ? (u.heroId === 'fotsor' ? 'golpe_puno' : 'golpe_espada')
         : u.heroId === 'astrid' ? 'disparo_arma_fuego' : u.heroId === 'kouji' ? 'disparo_flecha' : 'disparo_magia';
-      this.sound(snd, u.pos, 0.45);
+      this.sound([`${u.heroId}_ataque`, snd], u.pos, 0.45);
     }
     if (isStructure) {
       this.sound('torre_dispara', u.pos, 0.6);

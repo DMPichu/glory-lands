@@ -17,6 +17,54 @@ Iconos de [game-icons.net](https://game-icons.net), con licencia [CC BY 3.0](htt
 - **Skoll**: mounted-knight (gri_e)
 - **Sbed**: death-skull (cri_q)
 
+## Iconos de objetos
+También de [game-icons.net](https://game-icons.net) (CC BY 3.0), en `img/objetos/`.
+
+- **Lorc**: broadsword (sword), crystal-growth (crystal), feather (feather), gears (trigger), leather-boot (boots), moon (moon), spiked-armor (thorns), spyglass (scope), winged-shield (aegis), wizard-staff (staff)
+- **Delapouite**: book-cover (tome), cape (cloak), fire-gem (ember), health-potion (potion), katana (katana)
+- **Sbed**: shield (shield), water-drop (tear)
+- **Skoll**: fangs (fang)
+- **Zeromancer**: heart-plus (heart)
+
+## Sonido
+Música y efectos de la carpeta `Glory Lands/Sonidos` de la campaña, recortados y convertidos a `.ogg` (efectos de 3 s como máximo, música de 3 min). **Origen y licencia por confirmar**: son los sonidos que se usaban en la mesa y algunos pueden venir de juegos o bancos de sonido comerciales (los de Ikaruus llevan nombres de técnicas de otro juego).
+
+- `menu` ← Glory Lands - Peaceful Travel.mp3
+- `batalla` ← Ambience.mp3
+- `lorik` ← Lamentos.mp3
+- `golpe_espada` ← Jos/JosAttSw.mp3
+- `disparo_flecha` ← Kouji/KoujiNormalBow.mp3
+- `disparo_magia` ← Jos/JosMagMiss.mp3
+- `disparo_arma_fuego` ← Astrid/AstridPistola1.mp3
+- `critico` ← Fuyumi/FuyumiCritical.wav
+- `pocion` ← Eris/ErisPoti.wav
+- `torre_destruida` ← Cosas rompíendose.wav
+- `heroe_muere` ← Huesos.wav
+- `josephine_ataque` ← Jos/JosAttSw.mp3
+- `josephine_q` ← Jos/JosWord.mp3
+- `josephine_w` ← Eris/ErisHeal.wav
+- `josephine_r` ← Jos/JosIniciativa.mp3
+- `kouji_ataque` ← Kouji/KoujiNormalBow.mp3
+- `kouji_critico` ← Kouji/KoujiCritical.wav
+- `kouji_q` ← Kouji/SeekingArrow.wav
+- `kouji_w` ← Kouji/HealingSpirit-Signal Arrow.mp3
+- `kouji_e` ← Kouji/ReactAbjur.mp3
+- `kouji_r` ← Kouji/ThorArrow.wav
+- `ikaruus_q` ← Ikaruus/Gekko.mp3
+- `ikaruus_w` ← Ikaruus/Yukikaze.mp3
+- `ikaruus_e` ← Ikaruus/Kasha.mp3
+- `ikaruus_r` ← Ikaruus/Midare setsugekka.mp3
+- `astrid_ataque` ← Astrid/AstridRifle1.mp3
+- `astrid_q` ← Astrid/AstridPistola1.mp3
+- `astrid_e` ← Astrid/AstridHacha.mp3
+- `astrid_r` ← Astrid/AstridRifle1.mp3
+- `legna_q` ← Fuyumi/LightDrive.wav
+- `legna_r` ← Eris/ErisMassCW.wav
+- `catarina_q` ← Kouji/BorealShot.wav
+
+## Tokens
+Tokens de los personajes de la carpeta de la campaña (`Glory Lands/- IMAGES/1 -Tokens`), elegidos por la dueña del proyecto. **Origen y licencia por confirmar.**
+
 ## Lore y personajes
 Glory Lands y sus personajes pertenecen a la campaña de rol de DMPichu.
 

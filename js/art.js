@@ -2,7 +2,7 @@
 //   img/retratos/<héroe>.webp   retrato ilustrado (tiene prioridad sobre el token)
 //   tokens/<héroe>.webp         token de la campaña (también 'lorik')
 //   img/habilidades/<id>.svg    icono de habilidad o pasiva (game-icons.net, CC BY 3.0)
-//   img/objetos/<id>.webp       icono de objeto de la tienda
+//   img/objetos/<id>.webp|.svg  icono de objeto de la tienda (el .webp tiene prioridad)
 // Ver img/LEEME.md y tokens/LEEME.md.
 
 const portraitUrls = (id) => [`img/retratos/${id}.webp`, `tokens/${id}.webp`];
@@ -12,9 +12,9 @@ export function abilityIcon(id, emoji, color) {
   return `<img class="aicon" src="img/habilidades/${id}.svg" alt="" style="--hc:${color}" onerror="this.outerHTML='${emoji}'">`;
 }
 
-// Icono de objeto: la imagen si existe, si no el emoji
+// Icono de objeto: el .webp si existe, si no el .svg (game-icons), si no el emoji
 export function itemIcon(id, emoji) {
-  return `<img class="iicon" src="img/objetos/${id}.webp" alt="" onerror="this.outerHTML='${emoji}'">`;
+  return `<img class="iicon" src="img/objetos/${id}.webp" alt="" onerror="if(this.dataset.f)this.outerHTML='${emoji}';else{this.dataset.f=1;this.src='img/objetos/${id}.svg'}">`;
 }
 
 // Retrato redondo: retrato ilustrado, si no el token, si no la inicial

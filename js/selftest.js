@@ -30,7 +30,7 @@ export async function runSelftest(makeGame, minutes = 4) {
     const def = HEROES[id];
     for (const a of [def.passive, ...def.abilities]) if (await exists(`img/habilidades/${a.id}.svg`)) A.iconosHabilidad++;
   }
-  for (const id of Object.keys(ITEMS)) if (await exists(`img/objetos/${id}.webp`)) A.iconosObjeto.push(id);
+  for (const id of Object.keys(ITEMS)) if (await exists(`img/objetos/${id}.webp`) || await exists(`img/objetos/${id}.svg`)) A.iconosObjeto.push(id);
   A.musica = await probe(['menu', 'batalla', 'lorik', 'victoria', 'derrota'], 'musica');
   const common = ['golpe_espada', 'golpe_puno', 'disparo_flecha', 'disparo_magia', 'disparo_arma_fuego', 'critico', 'torre_dispara', 'torre_destruida',
     'heroe_muere', 'subir_nivel', 'oro', 'comprar', 'pocion', 'reaparecer', 'lorik_raices', 'lorik_invoca', 'aviso', 'clic'];

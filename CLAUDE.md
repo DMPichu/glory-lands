@@ -51,9 +51,9 @@ Todo es opcional: si un archivo no existe, el juego usa lo de siempre y no da er
 | Retrato de héroe | `img/retratos/<héroe>.webp` | 512 × 512 | Automático (tiene prioridad sobre el token) |
 | Token de la campaña | `tokens/<héroe>.webp` (también `lorik`) | 256 × 256 | Automático |
 | Icono de habilidad | `img/habilidades/<id_habilidad>.svg` | SVG blanco | Automático (ya hay 50, de game-icons.net) |
-| Icono de objeto | `img/objetos/<id_objeto>.webp` | 128 × 128 | Automático |
+| Icono de objeto | `img/objetos/<id_objeto>.webp` (o `.svg`) | 128 × 128 | Automático (ya hay 19 `.svg` de game-icons; un `.webp` los sustituye) |
 | Música | `audio/musica/<menu/batalla/lorik/victoria/derrota>.ogg` (o `.mp3`) | | Automático |
-| Efectos | `audio/efectos/<nombre>.ogg` y `<héroe>_<q/w/e/r>.ogg` | | Automático (lista en `audio/LEEME.md`) |
+| Efectos | `audio/efectos/<nombre>.ogg`, `<héroe>_<q/w/e/r>.ogg`, `<héroe>_ataque.ogg`, `<héroe>_critico.ogg` | | Automático (lista en `audio/LEEME.md`; ya hay 32 sonidos) |
 | Voces | `audio/voz/<héroe>_<elegir/definitiva/matar/morir>.ogg` | | Automático |
 | Modelo de héroe | `models/heroes/<héroe>.glb` | glTF binario con animaciones | Rellenar `glb` del héroe en `config.js` |
 | Otros modelos | `models/<nombre>.glb` | | Rellenar la entrada de `MODEL_GLB` en `config.js` |
