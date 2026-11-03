@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { MAP, LANES, LAYOUT, MODEL_GLB, CAMPS, EPIC_CAMPS } from './config.js';
 import { distToLanes, laneLength, lanePoint } from './map.js';
 
@@ -787,6 +788,7 @@ export function buildHeroModel(id, corrupted, glb) {
 // muerte y la forma de dragón siguen funcionando igual). Si falla la carga, se
 // queda el modelo básico.
 const loader = new GLTFLoader();
+loader.setMeshoptDecoder(MeshoptDecoder); // los modelos de models/kaykit van comprimidos con meshopt
 const glbCache = new Map();
 // modelos que han cargado bien (para la autoprueba)
 export const loadedGLB = new Set();
@@ -795,25 +797,16 @@ export const failedGLB = new Map();
 function loadGLB(spec) {
   if (!glbCache.has(spec.url)) {
     glbCache.set(spec.url, loader.loadAsync(spec.url).then((gltf) => {
-      // tintes por nombre de material (se aplican una sola vez al original)
-      gltf.scene.traverse((o) => {
-        if (!o.isMesh) return;
-        o.castShadow = true;
-        const t = spec.tint?.[o.material.name];
-        if (t) {
-          o.material = o.material.clone();
-          o.material.color.set(t.color ?? o.material.color);
-          if (t.emissive !== undefined) { o.material.emissive.set(t.emissive); o.material.emissiveIntensity = t.ei ?? 1; }
-          if (t.r !== undefined) o.material.roughness = t.r;
-          if (t.m !== undefined) o.material.metalness = t.m;
-        }
-      });
+      gltf.scene.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+      // las piezas que se esconden no cuentan para la altura (p. ej. armas largas)
+      for (const name of spec.hide ?? []) { const o = gltf.scene.getObjectByName(name); if (o) o.visible = false; }
       // escala para que mida lo mismo que los modelos básicos
       // (medida precisa: aplica la piel sobre el esqueleto, si no los modelos con
       // huesos escalados salen de un tamaño absurdo)
       gltf.scene.updateMatrixWorld(true);
       const size = new THREE.Box3().setFromObject(gltf.scene, true).getSize(new THREE.Vector3());
       gltf.fit = (spec.height ?? 2.2) / size.y;
+      for (const name of spec.hide ?? []) { const o = gltf.scene.getObjectByName(name); if (o) o.visible = true; }
       return gltf;
     }));
   }
@@ -823,6 +816,9 @@ function loadGLB(spec) {
 function upgradeToGLB(m, spec, corrupted) {
   loadGLB(spec).then((gltf) => {
     const root = SkeletonUtils.clone(gltf.scene);
+    // cada héroe puede compartir archivo con otros: piezas ocultas y tintes van por copia
+    for (const name of spec.hide ?? []) { const o = root.getObjectByName(name); if (o) o.visible = false; }
+    tintModel(root, spec.tint);
     root.scale.setScalar(gltf.fit);
     root.rotation.y = spec.rotY ?? 0;
     if (corrupted) corrupt(root);
@@ -856,10 +852,77 @@ function upgradeToGLB(m, spec, corrupted) {
     else for (const c of m.group.children) if (!spec.keep?.some((a) => m.extra?.[a.part] === c)) c.visible = false;
     if (m.extra) m.extra.crystal = null;
     m.group.add(root);
-    m.glb = { root, mixer, actions, current: null, lastT: null, prevAttack: 0, spec };
+    m.glb = { root, mixer, actions, current: null, lastT: null, prevAttack: 0, spec, slim: slimBones(root, spec) };
+    if (m.glb.slim) {
+      // se eleva lo que se alargan las piernas
+      root.position.y = SLIM.lift * gltf.fit;
+      applySlim(m.glb);
+    }
     play(m.glb, 'idle', 0);
     loadedGLB.add(spec.url);
   }).catch((e) => { failedGLB.set(spec.url, String(e?.message || e)); console.warn('No se pudo cargar el modelo', spec.url, e); });
+}
+
+// Tintes por nombre de pieza (nodo) o de material: { color, solid, emissive, ei, r, m }.
+// El color multiplica la textura, así que sirve para cambiar el tono de la ropa.
+function tintModel(root, tint) {
+  if (!tint) return;
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    const t = tint[o.name] ?? tint[o.parent?.name] ?? tint[o.material.name] ?? tint['*'];
+    if (!t) return;
+    o.material = o.material.clone();
+    if (t.solid) o.material.map = null; // color liso en vez de la textura (para cambiar el tono del todo)
+    if (t.color !== undefined) o.material.color.set(t.color);
+    if (t.emissive !== undefined) { o.material.emissive.set(t.emissive); o.material.emissiveIntensity = t.ei ?? 1; }
+    if (t.r !== undefined) o.material.roughness = t.r;
+    if (t.m !== undefined) o.material.metalness = t.m;
+  });
+}
+
+// Proporciones esbeltas: los personajes de KayKit son «cabezones»; reescalando
+// huesos se alarga el cuerpo y se achica la cabeza. Aquí va la escala FINAL que se
+// quiere para cada hueso [x, y, z] (y = a lo largo del hueso); como cada hueso hereda
+// la escala de su padre, la escala propia se calcula dividiendo entre la del padre.
+// lift sube el modelo lo que crecen las piernas.
+const SLIM = {
+  bones: {
+    hips: [0.82, 1, 0.82],
+    spine: [0.78, 1.4, 0.78],
+    chest: [0.8, 1.3, 0.8],
+    head: [0.46, 0.46, 0.46],
+    'upperarm.l': [0.75, 1.6, 0.75], 'upperarm.r': [0.75, 1.6, 0.75],
+    'lowerarm.l': [0.72, 1.6, 0.72], 'lowerarm.r': [0.72, 1.6, 0.72],
+    'hand.l': [1, 1, 1], 'hand.r': [1, 1, 1],
+    'upperleg.l': [0.75, 2.05, 0.75], 'upperleg.r': [0.75, 2.05, 0.75],
+    'lowerleg.l': [0.72, 2.05, 0.72], 'lowerleg.r': [0.72, 2.05, 0.72],
+    'foot.l': [0.95, 0.95, 0.95], 'foot.r': [0.95, 0.95, 0.95],
+  },
+  lift: 0.4,
+};
+
+function slimBones(root, spec) {
+  if (!spec.slim) return null;
+  // three.js quita los puntos de los nombres al cargar ('upperleg.l' -> 'upperlegl')
+  const want = new Map();
+  for (const [name, sc] of Object.entries(SLIM.bones)) {
+    const b = root.getObjectByName(name) ?? root.getObjectByName(name.replace(/\./g, ''));
+    if (b) want.set(b, sc);
+  }
+  if (!want.size) return null;
+  const list = [];
+  for (const [b, sc] of want) {
+    let p = b.parent, parent = [1, 1, 1];
+    while (p) { if (want.has(p)) { parent = want.get(p); break; } p = p.parent; }
+    list.push([b, sc.map((v, i) => v / parent[i])]);
+  }
+  return list;
+}
+
+function applySlim(g) {
+  // se aplica después de cada paso de animación (las animaciones pueden tocar la escala)
+  if (!g.slim) return;
+  for (const [b, sc] of g.slim) b.scale.set(sc[0], sc[1], sc[2]);
 }
 
 function play(g, state, fade = 0.2) {
@@ -889,6 +952,7 @@ function animateGLB(m, t, moving, attackT, dead) {
   }
   g.prevAttack = attackT;
   g.mixer.update(dt);
+  applySlim(g);
 }
 
 export function buildMinionModel(team, type) {

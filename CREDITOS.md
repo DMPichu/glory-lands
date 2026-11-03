@@ -4,8 +4,8 @@
 - [three.js](https://threejs.org/) 0.160 (licencia MIT), cargado desde jsDelivr.
 
 ## Modelos 3D
-- **RobotExpressive**, de Tomás Laulhé (CC0), del repositorio de ejemplos de three.js. Es el modelo de prueba de Fotsor.
-- El resto de modelos, el mapa y los efectos están hechos con formas básicas en `js/models.js` (originales).
+- **KayKit: Adventurers Character Pack** y **KayKit: Skeletons Character Pack**, de [Kay Lousberg](https://www.kaylousberg.com) (CC0). Son los modelos animados de los 10 héroes y de los súbditos, en `models/kaykit/`. Se recortaron las animaciones que no se usan y se comprimieron con meshopt; en el juego se recolorean y se estilizan las proporciones (ver `HERO_MODELS` en `js/config.js` y `SLIM` en `js/models.js`).
+- El resto de modelos (estructuras, Lorik, monstruos de la jungla), el mapa y los efectos están hechos con formas básicas en `js/models.js` y `js/jungle.js` (originales).
 
 ## Iconos de habilidades
 Iconos de [game-icons.net](https://game-icons.net), con licencia [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). En blanco y sin modificar, en `img/habilidades/`.

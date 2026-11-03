@@ -101,11 +101,11 @@ function start() {
   playMusic('batalla');
   game.on('coreExposed', ({ core }) => { if (core.kind === 'boss') playMusic('lorik'); });
   ui = new UI(game);
-  ui.onAbilityClick = (i) => castAt(i);
+  ui.onAbilityClick = (i) => selectAbility(i);
   ui.onAbilityHover = (i) => { aim.hover = i; };
   window.__game = game;
   ui.message(`¡Bienvenida a Glory Lands! Destruye las torres y derrota a Lorik.`, 'info');
-  ui.message('Clic derecho para moverte y atacar · Q W E R para las habilidades', 'info');
+  ui.message('Clic izquierdo para moverte y atacar · Q W E R elige una habilidad y clic derecho donde quieres que golpee', 'info');
 }
 
 function resize() {
@@ -160,7 +160,13 @@ function castAt(i) {
 const view = $('view');
 view.addEventListener('mousedown', (e) => {
   if (!game || game.paused) return;
-  if (e.button === 2 || e.button === 0) {
+  // con una habilidad seleccionada, el clic elige dónde golpea (como en LoL)
+  if (aim.idx >= 0) {
+    if (e.button === 2 || e.button === 0) { const i = aim.idx; aim.idx = -1; castAt(i); }
+    return;
+  }
+  // clic izquierdo: moverse y atacar (mantenerlo pulsado sigue al cursor)
+  if (e.button === 0) {
     mouse.held = true;
     mouse.repeatT = 0.18;
     command();
@@ -187,7 +193,8 @@ window.addEventListener('keydown', (e) => {
   if (!game || $('menu').style.display !== 'none') return;
   const k = e.key.toLowerCase();
   if (k === 'escape') {
-    if (ui.shopOpen) ui.toggleShop(false);
+    if (aim.idx >= 0) aim.idx = -1;
+    else if (ui.shopOpen) ui.toggleShop(false);
     else togglePause();
     return;
   }
@@ -196,7 +203,7 @@ window.addEventListener('keydown', (e) => {
   if (idx >= 0) {
     e.preventDefault();
     if (e.shiftKey || e.ctrlKey) game.levelAbility(game.player, idx);
-    else if (!e.repeat) aim.idx = idx;
+    else if (!e.repeat) selectAbility(idx);
     return;
   }
   if (k === 'tab') { e.preventDefault(); ui.showScoreboard(true); return; }
@@ -212,12 +219,17 @@ window.addEventListener('keyup', (e) => {
   if (!game) return;
   const k = e.key.toLowerCase();
   if (k === 'tab') { ui.showScoreboard(false); return; }
-  const idx = ['q', 'w', 'e', 'r'].indexOf(k);
-  if (idx >= 0 && aim.idx === idx) {
-    aim.idx = -1;
-    if (!game.paused) castAt(idx);
-  }
 });
+
+// Elegir habilidad: las que se lanzan sobre uno mismo (alcance 0) salen al momento;
+// las demás muestran el alcance y esperan al clic. Pulsar la misma tecla la cancela.
+function selectAbility(idx) {
+  const a = game.player.abilities[idx];
+  if (!a || !game.player.alive || game.over) return;
+  if (a.rank === 0) { ui.message('Esa habilidad aún no está aprendida', 'warn'); return; }
+  if (!(a.def.range > 0)) { aim.idx = -1; castAt(idx); return; }
+  aim.idx = aim.idx === idx ? -1 : idx;
+}
 window.addEventListener('blur', () => { aim.idx = -1; if (ui) ui.showScoreboard(false); });
 
 // Indicador de alcance: anillo alrededor del héroe y zona de efecto en el cursor
