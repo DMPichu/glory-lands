@@ -102,6 +102,7 @@ function start() {
   game.on('coreExposed', ({ core }) => { if (core.kind === 'boss') playMusic('lorik'); });
   ui = new UI(game);
   ui.onAbilityClick = (i) => castAt(i);
+  ui.onAbilityHover = (i) => { aim.hover = i; };
   window.__game = game;
   ui.message(`¡Bienvenida a Glory Lands! Destruye las torres y derrota a Lorik.`, 'info');
   ui.message('Clic derecho para moverte y atacar · Q W E R para las habilidades', 'info');
@@ -195,13 +196,72 @@ window.addEventListener('keydown', (e) => {
   if (idx >= 0) {
     e.preventDefault();
     if (e.shiftKey || e.ctrlKey) game.levelAbility(game.player, idx);
-    else castAt(idx);
+    else if (!e.repeat) aim.idx = idx;
     return;
   }
-  if (k === 'p' || k === 'b') ui.toggleShop();
+  if (k === 'tab') { e.preventDefault(); ui.showScoreboard(true); return; }
+  if (k === 'p') ui.toggleShop();
+  else if (k === 'b') game.startRecall(game.player);
   else if (k === '1') game.usePotion(game.player);
   else if (k === 's') game.player.order = null;
 });
+
+// Al soltar la tecla de una habilidad, se lanza hacia el cursor
+const aim = { idx: -1, hover: -1 };
+window.addEventListener('keyup', (e) => {
+  if (!game) return;
+  const k = e.key.toLowerCase();
+  if (k === 'tab') { ui.showScoreboard(false); return; }
+  const idx = ['q', 'w', 'e', 'r'].indexOf(k);
+  if (idx >= 0 && aim.idx === idx) {
+    aim.idx = -1;
+    if (!game.paused) castAt(idx);
+  }
+});
+window.addEventListener('blur', () => { aim.idx = -1; if (ui) ui.showScoreboard(false); });
+
+// Indicador de alcance: anillo alrededor del héroe y zona de efecto en el cursor
+function updateAim() {
+  if (!game.aimMeshes) {
+    const mk = (geo, color, op) => {
+      const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false, side: THREE.DoubleSide }));
+      m.rotation.x = -Math.PI / 2; m.visible = false; m.renderOrder = 5;
+      game.scene.add(m);
+      return m;
+    };
+    game.aimMeshes = { range: mk(new THREE.RingGeometry(0.96, 1, 64), 0x8fd0ff, 0.75), area: mk(new THREE.CircleGeometry(1, 40), 0x8fd0ff, 0.22) };
+  }
+  const { range, area } = game.aimMeshes;
+  const p = game.player;
+  const i = aim.idx >= 0 ? aim.idx : aim.hover;
+  const a = i >= 0 && p.alive && !game.paused ? p.abilities[i] : null;
+  range.visible = area.visible = false;
+  if (!a) return;
+  const def = a.def;
+  const ready = a.rank > 0 && a.cd <= 0;
+  const col = ready ? 0x8fd0ff : 0xff6a6a;
+  range.material.color.setHex(col); area.material.color.setHex(col);
+  const r = def.range || 0;
+  if (r > 0) {
+    range.visible = true;
+    range.position.set(p.pos.x, 0.12, p.pos.z);
+    range.scale.setScalar(r);
+  }
+  if (def.radius) {
+    area.visible = true;
+    let x = mouse.world.x, z = mouse.world.z;
+    if (r > 0) {
+      const dx = x - p.pos.x, dz = z - p.pos.z, d = Math.hypot(dx, dz);
+      if (d > r) { x = p.pos.x + (dx / d) * r; z = p.pos.z + (dz / d) * r; }
+    } else { x = p.pos.x; z = p.pos.z; }
+    area.position.set(x, 0.13, z);
+    area.scale.setScalar(def.radius);
+  } else if (r === 0) {
+    range.visible = true;
+    range.position.set(p.pos.x, 0.12, p.pos.z);
+    range.scale.setScalar(2.5);
+  }
+}
 
 function togglePause(v) {
   if (!game || game.over) return;
@@ -231,6 +291,7 @@ function frame(now) {
   view.style.cursor = ui.hover ? 'crosshair' : 'default';
 
   if (!game.paused) game.syncVisuals(dt);
+  updateAim();
   game.updateCamera(dt, window.innerWidth / window.innerHeight);
   if ($('bloomOpt').checked && params.get('bloom') !== '0') {
     renderPass.scene = game.scene;

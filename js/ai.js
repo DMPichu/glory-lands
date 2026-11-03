@@ -46,6 +46,10 @@ export function heroAI(g, u, dt) {
     if (nearEnemy && dist2(nearEnemy.pos, u.pos) < 6) {
       useAbilities(g, u, { retreat: true, enemy: nearEnemy });
     }
+    if (u.recall) return;
+    const far = dist2(u.pos, V(fountain.x, fountain.z)) > 45;
+    const safe = !g.heroes.some((h) => h.alive && h.team === enemyTeam && dist2(h.pos, u.pos) < 16);
+    if (far && safe && g.startRecall(u)) return;
     g.orderMove(u, V(fountain.x, fountain.z));
     return;
   }
@@ -102,6 +106,9 @@ export function heroAI(g, u, dt) {
     if (tanks.length >= 1 && !towerOnMe) { g.orderAttack(u, s); return; }
   }
 
+  // --- jungla: monstruos épicos en grupo y campamentos cercanos
+  if (jungleAI(g, u, hpR)) return;
+
   // --- posicionarse detrás de la oleada aliada de su carril
   const own = g.units.filter((m) => m.alive && m.kind === 'minion' && m.team === u.team && m.lane === lane);
   const progress = (o) => laneProject(lane, o.pos.x, o.pos.z).s;
@@ -128,6 +135,36 @@ export function heroAI(g, u, dt) {
   }
   const target = laneSpot(sTarget);
   if (dist2(target, u.pos) > 1.5) g.orderMove(u, target);
+}
+
+// Jungla: devuelve true si el bot se ha puesto a por un monstruo
+function jungleAI(g, u, hpR) {
+  if (!g.camps || hpR < 0.55) return false;
+  // monstruos épicos: van los 3 bots sanos más cercanos de su equipo, a partir del nivel 6
+  for (const camp of g.camps) {
+    if (camp.side !== 'epic' || !camp.alive || u.level < 6) continue;
+    const foesNear = g.heroes.some((h) => h.alive && h.team !== u.team && dist2(h.pos, camp.pos) < 22);
+    const team = g.heroes.filter((h) => h.alive && h.team === u.team && h.isBot && h.hp / h.maxHp > 0.6 && h.level >= 6)
+      .sort((a, b) => dist2(a.pos, camp.pos) - dist2(b.pos, camp.pos)).slice(0, 3);
+    if (team.length < 3 || !team.includes(u) || foesNear) continue;
+    const mon = g.nearest(camp.units.filter((m) => m.alive), u.pos);
+    if (mon) { g.orderAttack(u, mon); return true; }
+  }
+  // campamentos menores cercanos cuando el carril está tranquilo
+  let best = null, bd = 32;
+  for (const camp of g.camps) {
+    if (camp.side === 'epic' || !camp.alive) continue;
+    const d = dist2(camp.pos, u.pos);
+    if (d < bd) { bd = d; best = camp; }
+  }
+  if (!best) return false;
+  if (g.heroes.some((h) => h.alive && h.team !== u.team && dist2(h.pos, best.pos) < 16)) return false;
+  // no quitarle el campamento a un aliado que ya está en él
+  if (g.heroes.some((h) => h !== u && h.alive && h.team === u.team && dist2(h.pos, best.pos) < 8)) return false;
+  const mon = g.nearest(best.units.filter((m) => m.alive), u.pos);
+  if (!mon) return false;
+  g.orderAttack(u, mon);
+  return true;
 }
 
 // ¿Es seguro estar en esta posición respecto a las estructuras enemigas?
