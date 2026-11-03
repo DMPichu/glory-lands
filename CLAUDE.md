@@ -107,6 +107,10 @@ Hecho: Hermes (conectado en `roster.js`). Para otro héroe, copia `hermes.py` y 
 3. Revisa en `tools/galeria.html`. Hechos así: Belian, Lucille, Esperanza, Slinxi, Umi, Xeluna, Candle, Konta, Kouji, Grimdarkus, Ikaruus, Josephine y Zeflie (automático) y Cabbo (manual: `0.109,0.849,0.045,0.962 0.463 1.3`). Pendiente: Zestari (la demo devolvía error, probablemente cuota agotada).
 4. Límite: la textura es la ilustración proyectada desde delante; por los lados y por detrás se estira. Con modelos de Tripo o Meshy (forma y textura completas) bastaría con el esqueleto: pasarlos por `ia_heroe.py` sin la proyección.
 
+### Héroes humanoides por fichas (Blender, descartado)
+
+`tools/blender/heroe.py` construye un héroe a partir de su ficha en `fichas.py` con las piezas de `partes.py` (cara pintada de anime, peinados, tocados, ropa, armas) y los scripts propios `candle.py`, `konta.py`, `fotsor.py` y `cabbo.py` hacen los no humanos. **Se hicieron los 27 y la dueña los descartó (noviembre de 2026):** siguen siendo figuras de piezas básicas, como las del juego, y no mejoraban lo que hay. Se conservan por la cadena de esqueleto, animaciones y exportación; el camino elegido para los héroes es **VRoid Studio** (abajo).
+
 ### Conectar un modelo de VRoid (.vrm)
 
 La dueña crea los héroes en VRoid Studio siguiendo `GUIA_VROID.md` y sube el `.vrm` a `_entrada/`.
