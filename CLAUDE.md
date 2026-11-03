@@ -29,6 +29,8 @@ python -m http.server 8770          # y abrir http://localhost:8770
 | `js/ai.js` | Bots (carril asignado, farmeo, peleas, retirada), súbditos (siguen su carril) y torres/Lorik. |
 | `js/map.js` | Geometría de los carriles: avance `s` de una unidad, punto del carril, siguiente punto. |
 | `js/models.js` | Modelos hechos con formas básicas, cargador de `.glb`, y el mundo (suelo pintado, río, bosque instanciado, faroles, partículas). |
+| `js/heroes.js` | Modelos de los 10 héroes (estilo anime, fieles a los tokens): figura base, caras pintadas en un lienzo, peinados, ropa y armas. |
+| `js/jungle.js` | Jungla: campamentos neutrales, monstruos épicos del río, su IA y sus bendiciones. |
 | `js/effects.js` | Partículas, anillos, pilares de luz, destellos, rayos. |
 | `js/ui.js`, `js/main.js` | Interfaz (HUD, paneles, minimapa, tienda) y arranque, controles, bucle, música. |
 | `js/art.js` | Retratos, tokens e iconos opcionales (con respaldo si faltan). |

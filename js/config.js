@@ -480,7 +480,9 @@ export const MODEL_GLB = {
   boss: null,                // Altar (base de la Legión)
 };
 
-for (const [id, spec] of Object.entries(HERO_MODELS)) HEROES[id].glb = spec;
+// Los héroes usan sus modelos propios de estilo anime (js/heroes.js). Para volver a
+// los de KayKit, descomenta la línea de abajo.
+// for (const [id, spec] of Object.entries(HERO_MODELS)) HEROES[id].glb = spec;
 
 export const HERO_ORDER = ['josephine', 'fotsor', 'yeslie', 'astrid', 'kouji', 'grimdarkus', 'ikaruus', 'crixus', 'legna', 'catarina'];
 
