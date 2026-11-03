@@ -6,6 +6,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { MAP, LANES, LAYOUT, MODEL_GLB, CAMPS, EPIC_CAMPS } from './config.js';
 import { distToLanes, laneLength, lanePoint } from './map.js';
+import { HERO_BUILDERS_V2 } from './heroes.js';
 
 // --- Cachés para no duplicar geometrías y materiales ---------------------------
 const geoCache = new Map();
@@ -763,7 +764,8 @@ const HERO_BUILDERS = {
 };
 
 export function buildHeroModel(id, corrupted, glb) {
-  const m = HERO_BUILDERS[id]();
+  // modelos de estilo anime (js/heroes.js); los antiguos quedan de respaldo
+  const m = (HERO_BUILDERS_V2[id] ?? HERO_BUILDERS[id])();
   if (corrupted) corrupt(m.group);
   if (glb) upgradeToGLB(m, glb, corrupted);
   return m;

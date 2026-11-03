@@ -77,7 +77,7 @@ Cada héroe puede usar un modelo 3D animado en vez del hecho con formas básicas
 | `slim` | Proporciones esbeltas (alarga cuerpo y piernas y achica la cabeza). |
 | `keep` | Piezas del modelo básico que se pegan a un hueso, como las llamas de Fotsor. |
 
-Mientras carga (o si falla la carga), el héroe usa su modelo básico. Ahora todos los héroes y súbditos usan personajes de **KayKit** (CC0, de Kay Lousberg) recoloreados, en `models/kaykit/`; están en `HERO_MODELS` y `MODEL_GLB` de `js/config.js`. Para dar a un héroe su propio modelo, basta con cambiar su entrada. Si generas un modelo propio con IA (Meshy, Tripo…), puedes animarlo con **Mixamo**.
+Mientras carga (o si falla la carga), el héroe usa su modelo básico. Los héroes usan modelos propios de estilo anime (`js/heroes.js`), basados en los colores y rasgos de los tokens. Los súbditos usan personajes de **KayKit** (CC0, de Kay Lousberg) en `models/kaykit/`, configurados en `MODEL_GLB` de `js/config.js`. Para dar a un héroe su propio modelo, basta con cambiar su entrada. Si generas un modelo propio con IA (Meshy, Tripo…), puedes animarlo con **Mixamo**.
 
 ## Personalizar el juego
 
