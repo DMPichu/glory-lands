@@ -7,6 +7,7 @@ import { Effects } from './effects.js';
 import { ABILITY_IMPL, PASSIVE_IMPL } from './abilities.js';
 import { heroAI, minionAI, structureAI } from './ai.js';
 import { sfx, voice } from './audio.js';
+import { setupJungle, updateJungle, monsterAI, monsterHit, monsterKilled } from './jungle.js';
 
 const TMP = new THREE.Vector3();
 let NEXT_ID = 1;
@@ -61,6 +62,7 @@ export class Game {
 
     this.setupStructures();
     this.setupHeroes();
+    setupJungle(this);
   }
 
   on(ev, fn) { (this.listeners[ev] ||= []).push(fn); }
@@ -232,12 +234,12 @@ export class Game {
         const spd = (u.base.speed + this.itemStat(u, 'speed')) * (1 + this.buffSum(u, 'spd'));
         return spd * (1 - Math.min(0.7, this.buffMax(u, 'slow')));
       }
-      case 'cdr': return Math.min(0.4, this.itemStat(u, 'cdr'));
+      case 'cdr': return Math.min(0.5, this.itemStat(u, 'cdr') + this.buffSum(u, 'cdr'));
       case 'crit': return Math.min(1, this.itemStat(u, 'crit') + this.buffSum(u, 'crit'));
       case 'arpen': case 'mpen': return Math.min(0.6, this.itemStat(u, k));
       case 'range': return u.base.range;
       case 'hpRegen': return u.base.hpRegen + this.itemStat(u, 'hpRegen');
-      case 'mpRegen': return u.base.mpRegen + (g.mp ? 0.4 * L : 0);
+      case 'mpRegen': return (u.base.mpRegen + (g.mp ? 0.4 * L : 0)) * (1 + this.buffSum(u, 'mpregen'));
       default:
         return (u.base[k] || 0) + (g[k] || 0) * L + this.itemStat(u, k) + this.buffSum(u, 'bonus_' + k);
     }
@@ -287,7 +289,8 @@ export class Game {
   }
 
   enemiesInRadius(team, pos, r, kinds) {
-    return this.unitsInRadius(pos, r, (u) => u.team !== team && this.isTargetable(u) && (!kinds || kinds.includes(u.kind)));
+    return this.unitsInRadius(pos, r, (u) => u.team !== team && this.isTargetable(u)
+      && (!kinds || kinds.includes(u.kind) || (u.kind === 'monster' && kinds.includes('minion'))));
   }
 
   alliesInRadius(team, pos, r, kinds) {
@@ -373,6 +376,8 @@ export class Game {
     let a = amount;
     if (src && src.kind === 'hero' && src.isBot && src.team === 'red') a *= this.diff.dmg;
     if (src && src.kind === 'minion' && ['tower', 'nexus', 'boss'].includes(tgt.kind)) a *= 1.5;
+    if (src?.buffs) a *= 1 + this.buffSum(src, 'dmgup');
+    if (tgt.kind === 'monster') monsterHit(this, tgt, src);
     if (src && src.alive !== undefined) {
       const weak = this.buffMax(src, 'weak');
       if (weak) a *= 1 - weak;
@@ -450,6 +455,7 @@ export class Game {
     u.shields = [];
     u.dash = null; u.knock = null; u.channel = null;
     u.order = null;
+    if (u.kind === 'monster') { monsterKilled(this, u, killer); u.damagedBy.clear(); return; }
     const enemyTeam = this.enemiesOf(u.team);
 
     // ¿quién se lleva el crédito? (último héroe enemigo que dañó en 10 s)
@@ -704,6 +710,11 @@ export class Game {
       let done = this.dealDamage(u, t, dmg, type, { basic: true, crit });
       if (bonusMagic > 0 && t.alive) done += this.dealDamage(u, t, bonusMagic, 'magic');
       if (u.kind !== 'hero') return;
+      if (t.alive && this.getBuff(u, 'jg_root')) {
+        this.addBuff(t, 'dot', 3, 8 + u.level * 2, { key: 'jg_burn', src: u });
+        this.addBuff(t, 'slow', 1.5, 0.2, { key: 'jg_slow' });
+        if (Math.random() < 0.5) this.fx.burst(t.pos, 0x9fe870, 4, 1.5, 0.08, 0.4, 1);
+      }
       const ls = this.stat(u, 'lifesteal');
       if (ls > 0 && done > 0) {
         this.heal(u, done * ls);
@@ -992,10 +1003,10 @@ export class Game {
     const list = this.units.filter((u) => u.alive);
     for (let i = 0; i < list.length; i++) {
       const a = list[i];
-      const aStatic = a.kind !== 'hero' && a.kind !== 'minion';
+      const aStatic = !mobile(a);
       for (let j = i + 1; j < list.length; j++) {
         const b = list[j];
-        const bStatic = b.kind !== 'hero' && b.kind !== 'minion';
+        const bStatic = !mobile(b);
         if (aStatic && bStatic) continue;
         const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z;
         const min = (a.radius + b.radius) * (aStatic || bStatic ? 1 : 0.8);
@@ -1016,7 +1027,7 @@ export class Game {
       }
     }
     for (const u of list) {
-      if (u.kind !== 'hero' && u.kind !== 'minion') continue;
+      if (!mobile(u) && !u.epic) continue;
       // las rocas y arboledas no se pueden atravesar
       for (const o of this.obstacles) {
         const dx = u.pos.x - o.x, dz = u.pos.z - o.z;
@@ -1137,8 +1148,10 @@ export class Game {
       if (!u.alive || this.over) continue;
       if (u.kind === 'hero') { if (u.isBot) heroAI(this, u, dt); }
       else if (u.kind === 'minion') minionAI(this, u, dt);
+      else if (u.kind === 'monster') monsterAI(this, u, dt);
       else structureAI(this, u, dt);
     }
+    if (!this.over) updateJungle(this, dt);
 
     for (const u of this.units) if (u.alive) this.updateUnit(u, dt);
     this.separate();
@@ -1188,14 +1201,14 @@ export class Game {
             // los modelos animados tienen su propia animación de muerte
             animateModel(u.model, t + u.id, false, 0, 1, true);
             if (u.deathAnim > 2.2) {
-              if (u.kind === 'minion') { this.scene.remove(g); this.units.splice(i, 1); }
+              if (u.kind === 'minion' || u.kind === 'monster') { this.scene.remove(g); this.units.splice(i, 1); }
               else { g.visible = false; u.deathAnim = 0; }
             }
-          } else if (u.kind === 'hero' || u.kind === 'minion') {
+          } else if (u.kind === 'hero' || u.kind === 'minion' || u.kind === 'monster') {
             g.rotation.x = Math.min(Math.PI / 2, u.deathAnim * 4) * -1;
             g.position.y = -Math.max(0, u.deathAnim - 0.6) * 2;
             if (u.deathAnim > 1.2) {
-              if (u.kind === 'minion') { this.scene.remove(g); this.units.splice(i, 1); }
+              if (u.kind === 'minion' || u.kind === 'monster') { this.scene.remove(g); this.units.splice(i, 1); }
               else { g.visible = false; u.deathAnim = 0; }
             }
           } else {
@@ -1210,14 +1223,15 @@ export class Game {
       }
       g.position.x = u.pos.x;
       g.position.z = u.pos.z;
-      if (u.kind === 'hero' || u.kind === 'minion') {
+      if (u.kind === 'hero' || u.kind === 'minion' || u.kind === 'monster') {
         // girar suavemente
         let dr = u.facing - g.rotation.y;
         while (dr > Math.PI) dr -= Math.PI * 2;
         while (dr < -Math.PI) dr += Math.PI * 2;
         g.rotation.y += dr * Math.min(1, dt * 14);
         const frozen = this.hasBuff(u, 'stun');
-        if (!frozen) animateModel(u.model, t + u.id, u.moving, u.attackAnim, u.kind === 'minion' ? 0.8 : 1);
+        if (!frozen) animateModel(u.model, t + u.id, u.moving, u.attackAnim, u.kind === 'hero' ? 1 : 0.8);
+        if (!frozen && u.model.extra?.anim) u.model.extra.anim(t, u);
         if (u.kind === 'minion' && u.type === 'ranged' && u.team === 'red') g.position.y = 0.35 + Math.sin(t * 3 + u.id) * 0.12;
         if (u.dragon) g.position.y = 0.4 + Math.sin(t * 3) * 0.15;
       }
@@ -1287,6 +1301,9 @@ export class Game {
 }
 
 const GLOW_MAT = new THREE.MeshStandardMaterial({ color: 0xfff6c0, emissive: 0xffd040, emissiveIntensity: 2.2 });
+
+// unidades que se empujan entre sí (los épicos no se dejan empujar)
+const mobile = (u) => u.kind === 'hero' || u.kind === 'minion' || (u.kind === 'monster' && !u.epic);
 
 function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) {

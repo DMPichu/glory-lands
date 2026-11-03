@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-import { MAP, LANES, LAYOUT, MODEL_GLB } from './config.js';
+import { MAP, LANES, LAYOUT, MODEL_GLB, CAMPS, EPIC_CAMPS } from './config.js';
 import { distToLanes, laneLength, lanePoint } from './map.js';
 
 // --- Cachés para no duplicar geometrías y materiales ---------------------------
@@ -1177,8 +1177,11 @@ export function buildWorld(scene) {
   const inRiver = (px, pz, m = 0) => Math.abs(px - riverX(pz)) < 8 + m;
   const inBase = (px, pz, m = 0) => nexi.some((n) => Math.hypot(px - (n.x + Math.sign(n.x) * 8), pz) < 32 + m);
   const nearTower = (px, pz, m) => towers.some((t) => Math.hypot(px - t.x, pz - t.z) < m);
+  // claros de la jungla: los campamentos de monstruos (y su reflejo en el lado rojo)
+  const campSpots = [...CAMPS.flatMap((c) => [c, { x: -c.x, z: c.z }]), ...EPIC_CAMPS];
+  const nearCamp = (px, pz, m) => campSpots.some((c) => Math.hypot(px - c.x, pz - c.z) < m);
   const free = (px, pz, laneM = 3) => px > MAP.minX + 2 && px < MAP.maxX - 2 && pz > MAP.minZ + 2 && pz < MAP.maxZ - 2
-    && distToLanes(px, pz) > MAP.laneHalf + laneM && !inRiver(px, pz) && !inBase(px, pz) && !nearTower(px, pz, 6);
+    && distToLanes(px, pz) > MAP.laneHalf + laneM && !inRiver(px, pz) && !inBase(px, pz) && !nearTower(px, pz, 6) && !nearCamp(px, pz, 7);
 
   // ---------------------------------------------------------------- materiales
   const trunk = mat(0x5a3a22, { r: 0.9 });
@@ -1236,7 +1239,7 @@ export function buildWorld(scene) {
   for (let tries = 0, made = 0; tries < 2000 && made < 70; tries++) {
     const px = MAP.minX + 8 + rnd() * (W_MAP - 16), pz = MAP.minZ + 6 + rnd() * (H_MAP - 12);
     const r = 3 + rnd() * 3.5;
-    if (distToLanes(px, pz) < MAP.laneHalf + r + 4 || inRiver(px, pz, r + 3) || inBase(px, pz, r + 2) || nearTower(px, pz, r + 8)) continue;
+    if (distToLanes(px, pz) < MAP.laneHalf + r + 4 || inRiver(px, pz, r + 3) || inBase(px, pz, r + 2) || nearTower(px, pz, r + 8) || nearCamp(px, pz, r + 10)) continue;
     if (obstacles.some((o) => Math.hypot(o.x - px, o.z - pz) < o.r + r + 7)) continue;
     obstacles.push({ x: px, z: pz, r: r * 0.85 });
     made++;

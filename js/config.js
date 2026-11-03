@@ -509,3 +509,37 @@ export const STRUCTURES = {
   nexus: { hp: 4500, ad: 170, armor: 40, mr: 40, as: 0.9, range: 10.5, radius: 3.4 },
   boss: { hp: 5000, ad: 185, armor: 40, mr: 40, as: 0.9, range: 11.5, radius: 3.6 },
 };
+
+// ---------------------------------------------------------------------------
+// JUNGLA: monstruos neutrales entre los carriles y monstruos épicos del río
+// ---------------------------------------------------------------------------
+// Los campamentos se definen para el lado azul; el lado rojo es su reflejo.
+export const MONSTERS = {
+  ghost: { name: 'Fantasma de Yixl', hp: 560, ad: 28, armor: 10, mr: 25, as: 0.8, range: 2.4, speed: 6.2, radius: 0.7, gold: 32, xp: 75, height: 2.6, scale: 1.15 },
+  fauna: { name: 'Ciervo de Flavenia', hp: 760, ad: 32, armor: 18, mr: 12, as: 0.75, range: 2.6, speed: 6.6, radius: 0.9, gold: 40, xp: 85, height: 2.8, scale: 1.3 },
+  golem: { name: 'Golem de Zircón', hp: 1600, ad: 58, armor: 32, mr: 22, as: 0.6, range: 3.2, speed: 5.2, radius: 1.4, gold: 85, xp: 170, height: 4.6, scale: 1.6, buff: 'zircon' },
+  worm: { name: 'Gusano de Raíz', hp: 1500, ad: 64, armor: 22, mr: 32, as: 0.7, range: 3.6, speed: 5.2, radius: 1.4, gold: 85, xp: 170, height: 4.4, scale: 1.5, buff: 'root' },
+  dragon: { name: 'Dragón ácido de Cadalíz', hp: 4600, ad: 125, armor: 45, mr: 45, as: 0.6, range: 5.5, speed: 5, radius: 2.6, gold: 220, xp: 420, height: 7.5, scale: 2.7, teamBuff: 'cadaliz', epic: true },
+  tiger: { name: 'Tigre corrompido de Kugane', hp: 4200, ad: 140, armor: 50, mr: 38, as: 0.7, range: 4.2, speed: 6, radius: 2.4, gold: 220, xp: 420, height: 6.5, scale: 2.4, teamBuff: 'kugane', epic: true },
+};
+
+export const CAMPS = [
+  { id: 'yixl', x: -40, z: -23, units: ['ghost', 'ghost', 'ghost'], first: 55, respawn: 75 },
+  { id: 'zircon', x: -74, z: -34, units: ['golem'], first: 70, respawn: 120 },
+  { id: 'fauna', x: -40, z: 23, units: ['fauna', 'fauna'], first: 55, respawn: 75 },
+  { id: 'raiz', x: -74, z: 34, units: ['worm'], first: 70, respawn: 120 },
+];
+
+// En el río (x = 10 · sen(z / 24)), a medio camino entre los carriles
+export const EPIC_CAMPS = [
+  { id: 'cadaliz', x: 10, z: 40, units: ['dragon'], first: 210, respawn: 240, where: 'el río sur' },
+  { id: 'kugane', x: -10, z: -40, units: ['tiger'], first: 270, respawn: 240, where: 'el río norte' },
+];
+
+// Bendiciones que dan los monstruos (las de los épicos son para todo el equipo)
+export const JUNGLE_BUFFS = {
+  zircon: { name: 'Voluntad de Zircón', icon: '💠', dur: 90, desc: '+20 % de reducción de enfriamiento y el doble de regeneración de maná.' },
+  root: { name: 'Furia de la Raíz', icon: '🌿', dur: 90, desc: 'Tus ataques básicos queman y ralentizan.' },
+  cadaliz: { name: 'Aliento de Cadalíz', icon: '🐲', dur: 150, desc: 'Todo el equipo hace un 15 % más de daño.' },
+  kugane: { name: 'Rugido de Kugane', icon: '🐯', dur: 150, desc: 'Todo el equipo gana +25 de armadura y de resistencia mágica y un 8 % de velocidad.' },
+};
