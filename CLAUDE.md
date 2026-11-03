@@ -89,6 +89,14 @@ Identificadores de héroe: `josephine`, `fotsor`, `yeslie`, `astrid`, `kouji`, `
 4. Para súbditos y estructuras, lo mismo en `MODEL_GLB` (`minion_blue_melee`, `tower_red`, `boss`...).
 5. Ejecuta la autoprueba: `assets.glbCargados` debe incluir la ruta y `glbFallidos` debe estar vacío. Mira el modelo en el juego (azul y rojo): si sale de lado o hundido, ajusta `rotY` o `height`.
 
+### Modelos hechos en Blender con código
+
+`tools/blender/<héroe>.py` construye un héroe entero en Blender sin abrir la ventana: cuerpo orgánico (modificador Skin + subdivisión), piezas, esqueleto con pesos automáticos, animaciones `Idle`, `Run`, `Attack` y `Death`, y exportación a `.glb`. Las direcciones de los giros se calibran solas (`axis_sign`).
+```bash
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python tools/blender/hermes.py -- models/heroes/hermes.glb
+```
+Hecho: Hermes (conectado en `roster.js`). Para otro héroe, copia `hermes.py` y cambia el cuerpo, la cabeza, las piezas y el arma. La dueña también tiene BlenderMCP instalado (Blender con el servidor encendido en el puerto 9876) por si se quiere trabajar en su Blender abierto.
+
 ### Conectar un modelo de VRoid (.vrm)
 
 La dueña crea los héroes en VRoid Studio siguiendo `GUIA_VROID.md` y sube el `.vrm` a `_entrada/`.

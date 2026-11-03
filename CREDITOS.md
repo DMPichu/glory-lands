@@ -5,6 +5,7 @@
 - [three.js](https://threejs.org/) 0.160 (licencia MIT), cargado desde jsDelivr.
 
 ## Modelos 3D
+- **Hermes** (`models/heroes/hermes.glb`): modelo original hecho con código en Blender 5.2 (`tools/blender/hermes.py`), con esqueleto y animaciones propias. Mismo autor y licencia que el juego.
 - **KayKit: Adventurers Character Pack** y **KayKit: Skeletons Character Pack**, de [Kay Lousberg](https://www.kaylousberg.com) (CC0). Son los modelos animados de los súbditos, en `models/kaykit/` (también están preparados para los héroes, desactivados: `HERO_MODELS` en `js/config.js`). Se recortaron las animaciones que no se usan y se comprimieron con meshopt; en el juego se recolorean y se estilizan las proporciones (ver `HERO_MODELS` en `js/config.js` y `SLIM` en `js/models.js`).
 - Los 10 héroes son modelos originales de estilo anime hechos con formas básicas en `js/heroes.js`, con la cara pintada en el propio juego. Los tokens de la campaña solo sirvieron de guía de colores y rasgos.
 - El resto de modelos (estructuras, Altar, monstruos de la jungla), el mapa y los efectos están hechos con formas básicas en `js/models.js` y `js/jungle.js` (originales).

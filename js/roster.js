@@ -44,6 +44,8 @@ const NEW = {
     ],
     build: ['sword', 'scope', 'boots', 'katana', 'shield', 'fang'], prio: [0, 1, 2],
     look: { beast: { kind: 'lion', fur: 0xc8903c, muzzle: 0xe8c890, mane: 0x8a5a24, eye: 0xffb030 }, top: 0x6a4a30, accent: 0xb8bcc8, pants: 0x3a2a20, weapon: 'sword', bulky: true, cape: 0x2a3a5a, pauldrons: true },
+    // modelo hecho en Blender con tools/blender/hermes.py
+    glb: { url: 'models/heroes/hermes.glb', height: 2.45, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.5 },
   },
   // ------------------------------------------------------------ POLETT
   polett: {
