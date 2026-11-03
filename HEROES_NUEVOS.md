@@ -8,27 +8,27 @@ Usa estos `id` (en minúsculas, sin tildes). Cada uno ya tiene su token en `toke
 
 | id | Héroe | Rol que pidió la dueña | Token (origen) |
 |---|---|---|---|
-| `hermes` | Hermes | Luchador de ráfaga y críticos con habilidades de paladín | token Hermes (león) |
+| `hermes` | Hermes | Luchador de ráfaga y críticos con habilidades de paladín | token Hermes 4 (león) |
 | `polett` | Polett | Luchadora de daño sostenido | token Polett |
-| `belian` | Belian | Sanadora | token Belian |
-| `vallentine` | Vallentine | Juggernaut tanque | token Vallentine |
-| `emmeline` | Emmeline | Hechicera magenta | token Emmeline Garrington |
+| `belian` | Belian | Sanadora | token Belian 2 |
+| `vallentine` | Vallentine | Juggernaut tanque | token Vallentine Pelo |
+| `emmeline` | Emmeline | Hechicera magenta | imagen que pasó la dueña (pelo blanco, ojos rojos, marco gótico) |
 | `lucille` | Lucille | Tanque de hielo y glamurosa | token Lucille Ashbridge |
-| `esperanza` | Esperanza | Clériga espadachina de oscuridad | token Esperanza Gredvand |
-| `fuyumi` | Fuyumi | Asesina furtiva de ataques divinos | token Fuyumi |
-| `slinxi` | Slinxi | Muy buena limpiando oleadas y grupos, muy tanque, poco daño a héroes, muy rápida | token Slinxi (goblin) |
-| `umi` | Umi | Luchadora monje: muchísimos escudos, muy frágil cuando se los rompen, mucha evasión, daño moderado, ataque a distancia activable (esferas de fuego verde) | token Umi |
-| `zeflie` | Zeflie | Pareja con Zestari: funcionan bien en combo pero se pueden jugar por separado | recorte de «Zeflie and Zestari» (la rubia) |
-| `zestari` | Zestari | Pareja con Zeflie (ver arriba) | recorte de `ALIADOS/Zestari` (elfa de pelo lila con sombrero de bruja y libro) |
-| `xeluna` | Xeluna | Luchadora *offtank*: con poca vida golpea muy fuerte | token Xeluna |
-| `vrizahl` | Vrizahl | Hechicero del trueno, ráfaga enorme, muy frágil; una habilidad es una caja de fuerza que encierra a alguien 3 s (no se le puede dañar dentro) | token Vrizahl |
+| `esperanza` | Esperanza | Clériga espadachina de oscuridad | token Esperanza Pendragon |
+| `fuyumi` | Fuyumi | Asesina furtiva de ataques divinos | token Fuyumi2 (3) |
+| `slinxi` | Slinxi | Muy buena limpiando oleadas y grupos, muy tanque, poco daño a héroes, muy rápida | token Slinxi 3 (goblin) |
+| `umi` | Umi | Luchadora monje: muchísimos escudos, muy frágil cuando se los rompen, mucha evasión, daño moderado, ataque a distancia activable (esferas de fuego verde) | token Umi2 |
+| `zeflie` | Zeflie | Pareja con Zestari: funcionan bien en combo pero se pueden jugar por separado | imagen que pasó la dueña (borde verde: elfa de coletas rubio claro) |
+| `zestari` | Zestari | Pareja con Zeflie (ver arriba) | imagen que pasó la dueña (borde morado: elfa de pelo lila con sombrero de bruja) |
+| `xeluna` | Xeluna | Luchadora *offtank*: con poca vida golpea muy fuerte | token Xeluna Party |
+| `vrizahl` | Vrizahl | Hechicero del trueno, ráfaga enorme, muy frágil; una habilidad es una caja de fuerza que encierra a alguien 3 s (no se le puede dañar dentro) | token Vrizahl 3 |
 | `candle` | Candle | Hechicera del trueno: escudos defensivos, control, daño moderado, buena limpiando oleadas | token Candle |
 | `cabbo` | Cabbo | Tanque y sanador, resistente | token Cabbo |
 | `konta` | Konta | Asesino *trickster* con un *dash* potente que aturde | recorte de `ALIADOS/Konta` (felino con sombrero y armadura) |
 
 **Rediseño de Catarina** (`catarina`, ya existe): luchadora de críticos con **una sola** habilidad de hielo y una definitiva de un único corte que ejecuta a un enemigo. Su token sigue en `tokens/catarina.webp`.
 
-La dueña eligió los tokens de los 10 primeros héroes en el selector; los de estos 17 los eligió Claude (el más «normal» de cada uno) y la dueña puede cambiarlos. Para cambiar uno basta con sustituir `tokens/<id>.webp`.
+Los tokens los eligió la dueña en el selector (y pasó aparte los de Emmeline, Zeflie y Zestari). **Los modelos de `js/heroes.js` deben parecerse a ellos**: especie (Hermes es un león, Slinxi una goblin, Umi, Candle y Konta son felinos), pelo, colores y ropa. Para cambiar un token basta con sustituir `tokens/<id>.webp`.
 
 ## Ilustraciones de cuerpo entero
 
