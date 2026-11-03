@@ -119,7 +119,7 @@ La dueña crea los héroes en VRoid Studio siguiendo `GUIA_VROID.md` y sube el `
 3. Lo carga `upgradeToVRM` en `models.js` (three-vrm 3.3.7 desde el CDN): mantiene el sombreado MToon y la física del pelo, anima los huesos en `animateVRM` (reposo, correr, golpe, parpadeo; la muerte la hace el juego) y le pasa a las manos las armas de `handR`/`handL` del modelo básico. La Legión oscurece sus colores en el sitio (cada héroe interpreta su propia copia del archivo).
 4. Peso: hasta 10 MB por `.vrm` (excepción a la regla de 5 MB). Si pesa más, pide a la dueña que lo exporte con reducción de polígonos y atlas de 1024.
 5. Autoprueba: el `.vrm` debe salir en `assets.glbCargados`.
-6. Solo se ha probado con VRM 1.0. Con VRM 0.x `animateVRM` invierte los ejes x y z de los huesos (`v0`); si los brazos o las piernas se mueven al revés, el fallo estará ahí.
+6. Probado con VRM 1.0 y con VRM 0.x (muestras CC0 de VRoid, en `_entrada/vroid_cc0/` en el PC de la dueña, no en el repo). En 0.x `animateVRM` invierte los ejes x y z de los huesos (`v0`) y `moveWeapons` invierte +X y +Z al colgar las armas de los huesos normalizados.
 
 ### Procesar `_entrada/`
 

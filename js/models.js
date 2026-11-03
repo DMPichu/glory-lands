@@ -1010,23 +1010,21 @@ function loadVRM(spec) {
 }
 
 // Las armas del modelo básico pasan a las manos del VRM (VRoid no hace armas).
-// Se calcula su giro con el VRM aún en pose de T: el eje +Y del arma apunta hacia
-// el codo y el +Z hacia delante, igual que en la mano del modelo básico.
-function moveWeapons(m, vrm) {
-  m.group.updateMatrixWorld(true);
-  const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(m.group.getWorldQuaternion(new THREE.Quaternion()));
-  const gs = m.group.getWorldScale(new THREE.Vector3()).x;
-  for (const [part, handName, armName] of [['handR', 'rightHand', 'rightLowerArm'], ['handL', 'leftHand', 'leftLowerArm']]) {
+// Se cuelgan de los huesos normalizados (en reposo no tienen giro, igual en VRM 0.x
+// y 1.0): el brazo derecho se extiende hacia -X, así que en la mano derecha +Y del
+// arma (hacia el codo) es +X y +Z (hacia delante) es +Z; en la izquierda, al revés.
+// En VRM 0.x el modelo mira a -Z en su propio sistema (three-vrm gira la escena
+// entera) y el brazo derecho se extiende hacia +X: se invierten los dos ejes.
+function moveWeapons(m, vrm, k, v0) {
+  const f = v0 ? -1 : 1;
+  for (const [part, handName, sx] of [['handR', 'rightHand', 1], ['handL', 'leftHand', -1]]) {
     const hand = m.parts?.[part];
-    const bone = vrm.humanoid.getRawBoneNode(handName), arm = vrm.humanoid.getRawBoneNode(armName);
-    if (!hand || !bone || !arm || !hand.children.length) continue;
-    const pb = bone.getWorldPosition(new THREE.Vector3());
-    const y = arm.getWorldPosition(new THREE.Vector3()).sub(pb).normalize();
-    const z = fwd.clone().sub(y.clone().multiplyScalar(fwd.dot(y))).normalize();
-    const x = new THREE.Vector3().crossVectors(y, z);
-    const world = new THREE.Matrix4().compose(pb, new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z)), new THREE.Vector3(gs, gs, gs));
+    const bone = vrm.humanoid.getNormalizedBoneNode(handName);
+    if (!hand || !bone || !hand.children.length) continue;
     const holder = new THREE.Object3D();
-    new THREE.Matrix4().copy(bone.matrixWorld).invert().multiply(world).decompose(holder.position, holder.quaternion, holder.scale);
+    const y = new THREE.Vector3(sx * f, 0, 0), z = new THREE.Vector3(0, 0, f);
+    holder.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(y, z), y, z));
+    holder.scale.setScalar(1 / k);
     bone.add(holder);
     for (const w of [...hand.children]) holder.add(w);
   }
@@ -1056,7 +1054,7 @@ function upgradeToVRM(m, spec, corrupted) {
     wrap.rotation.y = spec.rotY ?? 0;
     if (m.parts?.body) m.parts.body.visible = false;
     m.group.add(wrap);
-    if (spec.weapons !== false) moveWeapons(m, vrm);
+    if (spec.weapons !== false) moveWeapons(m, vrm, wrap.scale.x, vrm.meta?.metaVersion === '0');
     m.vrm = { vrm, wrap, lastT: null, blinkAt: 2 + Math.random() * 3, v0: vrm.meta?.metaVersion === '0', spec, springReady: false };
     animateVRM(m, 0, false, 0);
     loadedGLB.add(spec.url);

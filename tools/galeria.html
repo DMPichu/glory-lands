@@ -7,7 +7,7 @@
 <!-- Galería de modelos: todos los héroes en fila junto a su token, para comparar.
      Abrir con el servidor del juego: http://localhost:8770/tools/galeria.html
      ?ids=hermes,umi limita la lista; ?red=1 muestra la versión de la Legión;
-     ?vrm=models/heroes/belian.vrm&ids=belian prueba un VRM sin tocar config.js;
+     ?vrm=models/heroes/belian.vrm&ids=belian prueba un VRM sin tocar config.js (varios separados por comas, uno por héroe);
      ?anim=correr muestra la carrera; ?anim=atacar, el momento del golpe. -->
 <style>
   body { margin: 0; background: #1a1626; color: #eee; font: 13px sans-serif; }
@@ -35,7 +35,7 @@ import { buildHeroModel, animateModel } from './js/models.js';
 const q = new URLSearchParams(location.search);
 const models = [];
 const ids = q.get('ids') ? q.get('ids').split(',') : HERO_ORDER;
-if (q.get('vrm')) for (const id of ids) HEROES[id].glb = { url: q.get('vrm'), height: Number(q.get('h')) || 2.2 };
+if (q.get('vrm')) { const vs = q.get('vrm').split(','); ids.forEach((id, i) => { HEROES[id].glb = { url: vs[i % vs.length], height: Number(q.get('h')) || 2.2 }; }); }
 const perRow = Math.min(ids.length, Number(q.get('row')) || 9);
 const rows = Math.ceil(ids.length / perRow);
 const spanX = perRow * 1.4, spanY = rows * 1.45 + 0.2;
