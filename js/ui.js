@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { HEROES, ITEMS, SHOP_ORDER, LAYOUT, CONST, MAP, LANES, xpToNext } from './config.js';
 import { riverX } from './models.js';
 import { abilityIcon, itemIcon, portrait, tokenImage, drawToken } from './art.js';
+import { activeBlessings } from './jungle.js';
 
 const $ = (id) => document.getElementById(id);
 const V = new THREE.Vector3();
@@ -71,6 +72,8 @@ export class UI {
         ev.stopPropagation();
         this.onAbilityClick?.(i);
       });
+      el.addEventListener('mouseenter', () => this.onAbilityHover?.(i));
+      el.addEventListener('mouseleave', () => this.onAbilityHover?.(-1));
       abil.appendChild(el);
       return el;
     });
@@ -165,6 +168,8 @@ export class UI {
     // barras del jugador
     const hpR = p.hp / p.maxHp;
     $('hpFill').style.width = hpR * 100 + '%';
+    this.drawBlessings(p);
+    if (this.scoreOpen && (this.scoreT = (this.scoreT || 0) + 1) % 15 === 0) this.drawScoreboard();
     const sh = g.shieldTotal(p);
     $('hpShield').style.width = Math.min(1 - hpR, sh / p.maxHp) * 100 + '%';
     $('hpShield').style.left = hpR * 100 + '%';
@@ -316,6 +321,22 @@ export class UI {
         if (g.hasBuff(u, 'weak')) st.push('💔');
         if (u.channel) st.push('🎯…');
         if (st.length) { c.font = '13px system-ui'; c.fillText(st.join(' '), s.x, y + 28); }
+      } else if (u.kind === 'monster') {
+        // monstruos neutrales: barra ámbar; los grandes y los épicos, con nombre
+        const big = u.epic || u.base.buff;
+        const bw = u.epic ? 130 : big ? 70 : 44, bh = u.epic ? 8 : 5;
+        c.fillStyle = 'rgba(10,10,18,0.85)';
+        c.fillRect(s.x - bw / 2 - 1, s.y - 1, bw + 2, bh + 2);
+        c.fillStyle = u.epic ? '#c8ff40' : '#ffb84a';
+        c.fillRect(s.x - bw / 2, s.y, bw * (u.hp / u.maxHp), bh);
+        if (big) {
+          c.font = `600 ${u.epic ? 13 : 11}px system-ui, sans-serif`;
+          c.textAlign = 'center';
+          c.strokeStyle = 'rgba(0,0,0,0.8)'; c.lineWidth = 3;
+          c.strokeText(u.name, s.x, s.y - 5);
+          c.fillStyle = u.epic ? '#e8ffb0' : '#ffe0b0';
+          c.fillText(u.name, s.x, s.y - 5);
+        }
       } else if (u.kind === 'minion') {
         const bw = 34, bh = 4;
         c.fillStyle = 'rgba(10,10,18,0.8)';
@@ -393,6 +414,43 @@ export class UI {
     return cv;
   }
 
+  // Marcador (tecla Tab): los 14 héroes con nivel, K/M/A, súbditos y objetos
+  showScoreboard(v) {
+    this.scoreOpen = v;
+    $('scoreboard').style.display = v ? 'flex' : 'none';
+    if (v) this.drawScoreboard();
+  }
+
+  drawScoreboard() {
+    const g = this.g;
+    const row = (h) => `<tr class="${h.isPlayer ? 'me' : ''}${h.alive ? '' : ' dead'}">
+      <td class="sbHero"><span class="sbPort" style="background:radial-gradient(circle at 35% 30%, ${h.def.color}, #1a1626 80%)">${portrait(h.def)}</span>${g.label ? g.label(h) : h.name}</td>
+      <td>${h.level}</td><td>${h.kills} / ${h.deaths} / ${h.assists}</td><td>${h.cs}</td>
+      <td class="sbItems">${h.items.map((id) => `<span>${itemIcon(id, ITEMS[id].icon)}</span>`).join('')}</td>
+      <td>${h.alive ? '' : '💀 ' + Math.ceil(h.deadTimer)}</td></tr>`;
+    const team = (t, name) => {
+      const hs = g.heroes.filter((h) => h.team === t);
+      const k = hs.reduce((a, h) => a + h.kills, 0);
+      const towers = g.units.filter((u) => u.kind === 'tower' && u.team !== t && !u.alive).length;
+      return `<div class="sbTeam ${t}"><div class="sbHead"><b>${name}</b><span>⚔️ ${k} · 🏰 ${towers} torres</span></div>
+        <table><tr><th>Héroe</th><th>Nv</th><th>K / M / A</th><th>Súbd.</th><th>Objetos</th><th></th></tr>${hs.map(row).join('')}</table></div>`;
+    };
+    $('scoreboard').innerHTML = team('blue', 'Blood Hawks') + team('red', 'Legión de Lorik');
+  }
+
+  // Bendiciones de la jungla activas del jugador
+  drawBlessings(p) {
+    const el = $('blessings');
+    if (!el) return;
+    const list = activeBlessings(this.g, p);
+    const key = list.map((b) => b.id).join(',');
+    if (key !== this.blessKey) {
+      this.blessKey = key;
+      el.innerHTML = list.map((b) => `<div class="bless" title="${b.name}: ${b.desc}">${b.icon}<span></span></div>`).join('');
+    }
+    [...el.children].forEach((d, i) => { d.querySelector('span').textContent = Math.ceil(list[i].t); });
+  }
+
   drawMinimap() {
     const g = this.g, c = this.mctx;
     const W = this.mini.width, H = this.mini.height;
@@ -411,6 +469,21 @@ export class UI {
       } else if (u.kind === 'minion') {
         c.fillStyle = col;
         c.fillRect(sx(u.pos.x) - 1.5, sz(u.pos.z) - 1.5, 3, 3);
+      }
+    }
+    // campamentos de la jungla: icono si están vivos, segundos que faltan si no
+    for (const camp of g.camps || []) {
+      const x = sx(camp.pos.x), y = sz(camp.pos.z);
+      const epic = camp.side === 'epic';
+      if (camp.alive) {
+        c.fillStyle = epic ? '#c8ff40' : '#ffb84a';
+        c.beginPath(); c.arc(x, y, epic ? 5 : 3.2, 0, 7); c.fill();
+        c.strokeStyle = '#000'; c.lineWidth = 1; c.stroke();
+      } else if (epic || camp.next - g.time < 30) {
+        c.font = 'bold 9px system-ui, sans-serif';
+        c.textAlign = 'center';
+        c.fillStyle = epic ? '#e8ffb0' : '#ffe0b0';
+        c.fillText(Math.max(0, Math.ceil(camp.next - g.time)), x, y + 3);
       }
     }
     for (const h of g.heroes) {

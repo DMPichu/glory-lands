@@ -190,3 +190,26 @@ body:has(#deadScreen[style*="flex"]) #view { filter: grayscale(0.85) brightness(
 .tok { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 #teamsRed .tok { filter: saturate(0.55) brightness(0.72) sepia(0.25) hue-rotate(-25deg); }
 .iicon { width: 80%; height: 80%; object-fit: contain; }
+
+/* bendiciones de la jungla (encima del panel inferior) */
+#blessings { position: absolute; bottom: 178px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; pointer-events: auto; }
+.bless { position: relative; width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center; font-size: 22px;
+  background: rgba(16, 14, 26, 0.9); border: 1px solid #c8ff40; box-shadow: 0 0 10px rgba(200, 255, 64, 0.35); cursor: help; }
+.bless span { position: absolute; bottom: -2px; right: 2px; font-size: 10px; font-weight: 800; color: #fff; text-shadow: 0 0 3px #000; }
+
+/* marcador (Tab) */
+#scoreboard { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); width: min(860px, calc(100vw - 32px)); display: none; flex-direction: column; gap: 10px;
+  padding: 14px; border-radius: 14px; background: rgba(12, 10, 20, 0.94); border: 1px solid var(--gold); pointer-events: none; z-index: 15; }
+.sbTeam .sbHead { display: flex; justify-content: space-between; font-family: Cinzel, serif; margin-bottom: 4px; }
+.sbTeam.blue .sbHead b { color: var(--blue); } .sbTeam.red .sbHead b { color: var(--red); }
+.sbHead span { font-size: 12px; color: var(--dim); font-family: Inter, sans-serif; }
+#scoreboard table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+#scoreboard th { text-align: left; color: var(--dim); font-weight: 600; font-size: 11px; padding: 2px 6px; }
+#scoreboard td { padding: 3px 6px; border-top: 1px solid rgba(255, 255, 255, 0.06); white-space: nowrap; }
+#scoreboard tr.me td { background: rgba(93, 255, 122, 0.08); }
+#scoreboard tr.dead td { opacity: 0.55; }
+.sbHero { display: flex; align-items: center; gap: 6px; }
+.sbPort { position: relative; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; overflow: hidden; flex: none; }
+.sbPort .tok { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.sbItems span { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 2px; border-radius: 5px; background: #231e34; font-size: 13px; overflow: hidden; }
+.sbItems img { width: 100%; height: 100%; object-fit: cover; }
