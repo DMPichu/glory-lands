@@ -120,7 +120,7 @@ export class Game {
       const S = STRUCTURES[kind];
       const u = this.makeUnit({ team, kind, x: L.nexus.x, z: L.nexus.z, radius: S.radius, base: { ...S, mp: 0 },
         model: buildStructureModel(team, kind), height: team === 'blue' ? 15 : 9 });
-      u.name = team === 'blue' ? 'Torre de Zugri' : 'Lorik';
+      u.name = team === 'blue' ? 'Santuario' : 'Altar';
       u.state.rootCd = 6; u.state.summonCd = 12;
       if (team === 'blue') this.blueNexus = u; else this.boss = u;
     }
@@ -1109,7 +1109,7 @@ export class Game {
     }
   }
 
-  // Lorik invoca ángeles corrompidos
+  // El Altar de la Legión invoca ángeles corrompidos
   summonAngels(boss, n) {
     for (let i = 0; i < n; i++) {
       const M = MINIONS.ranged;
@@ -1298,8 +1298,7 @@ export class Game {
       if (ex?.book) ex.book.position.y = 1.45 + Math.sin(t * 2.5) * 0.08;
       if (ex?.spin) for (const o of ex.spin) { o.rotation.y += dt * 1.6; o.rotation.x += dt * 0.7; }
       if (ex?.wheel) ex.wheel.rotation.z += dt * 0.8;
-      if (ex?.lorik) {
-        ex.lorik.position.y = 1.8 + Math.sin(t * 1.4) * 0.3;
+      if (ex?.bolts) {
         ex.bolts.rotation.y += dt * 0.8;
         ex.bolts.visible = Math.random() < 0.6;
       }

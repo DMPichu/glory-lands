@@ -6,8 +6,8 @@ Prototipo de juego 3D estilo MOBA ambientado en **Glory Lands**. Los **Blood Haw
 
 1. Elige a uno de los **10 héroes**: Josephine, Fotsor, Yeslie Moonbloom, Astrid, Kouji Kitaeda, Grimdarkus II, Ikaruus Rukhu, Crixus, Legna o Catarina Fersen.
 2. Elige el modo (**7 contra 7**, o **1 contra 1** para practicar) y la dificultad. Los otros 13 héroes son bots.
-3. Hay tres carriles (norte, central y sur) con dos obeliscos cada uno. Derriba los dos de **cualquier** carril para dejar expuesto a **Lorik** y derrótalo en su santuario.
-4. Si cae la **Torre de Zugri** (tu base), pierdes.
+3. Hay tres carriles (norte, central y sur) con dos obeliscos cada uno. Derriba los dos de **cualquier** carril para dejar expuesto el **Altar** de la Legión y destrúyelo.
+4. Si cae el **Santuario** (tu base), pierdes.
 
 Un mismo héroe puede estar en los dos equipos; el de la Legión lleva colores oscuros (y, en los mensajes, la etiqueta «(Legión)»).
 
@@ -15,8 +15,8 @@ Un mismo héroe puede estar en los dos equipos; el de la Legión lleva colores o
 
 | Acción | Tecla |
 |---|---|
-| Moverse / atacar | **Clic izquierdo** (mantenerlo pulsado sigue al cursor) |
-| Habilidades | **Q W E R** elige la habilidad y muestra su alcance; **clic derecho** donde quieras que golpee. Las que se lanzan sobre uno mismo salen al momento. **Esc** o la misma tecla cancelan |
+| Moverse / atacar | **Clic derecho** (mantenerlo pulsado sigue al cursor) |
+| Habilidades | **Q W E R** elige la habilidad y muestra su alcance; **clic izquierdo** donde quieras que golpee. Las que se lanzan sobre uno mismo salen al momento. **Clic derecho**, **Esc** o la misma tecla cancelan |
 | Marcador | **Tab** (mantener) |
 | Volver a la base | **B** (6 s sin moverse ni recibir daño) |
 | Mejorar habilidad | **Mayús + Q/W/E/R** o el botón **+** |
@@ -38,7 +38,7 @@ Un mismo héroe puede estar en los dos equipos; el de la Legión lleva colores o
 - Las torres atacan a quien entre en su alcance. Si atacas a un héroe bajo su torre, la torre te atacará a ti.
 - La torre interior de un carril no se puede dañar mientras la exterior siga en pie. La base queda expuesta en cuanto un carril se queda sin torres.
 - En un carril sin torres enemigas salen **súbditos de asedio** (más grandes y fuertes).
-- Lorik se defiende: enraíza a los héroes cercanos y, sin torres que lo protejan, invoca ángeles corrompidos.
+- El Altar se defiende: enraíza a los héroes cercanos y, sin torres que lo protejan, invoca ángeles corrompidos.
 
 ## Cómo abrirlo
 
@@ -54,7 +54,7 @@ El juego usa módulos de JavaScript, así que **no funciona abriendo `index.html
 | `index.html`, `style.css` | Página, menú e interfaz. |
 | `js/config.js` | **Todos los números del juego**: vida, daño, enfriamientos, objetos, súbditos y torres. Es el archivo que hay que tocar para equilibrar. |
 | `js/abilities.js` | Qué hace cada habilidad (Q/W/E/R) y cada pasiva. |
-| `js/ai.js` | Inteligencia de los bots, los súbditos, las torres y Lorik. |
+| `js/ai.js` | Inteligencia de los bots, los súbditos, las torres, el Santuario y el Altar. |
 | `js/game.js` | Motor: combate, movimiento, oleadas, muerte y recompensas. |
 | `js/map.js` | Geometría de los carriles (avance de cada unidad por su carril). |
 | `js/models.js` | Modelos 3D hechos con formas básicas y el mapa (vegetación, río, puentes, faroles, partículas). |

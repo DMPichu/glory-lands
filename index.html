@@ -45,10 +45,10 @@
         <button id="playBtn">¡A la batalla!</button>
       </div>
       <div class="controls">
-        <b>Controles:</b> clic izquierdo para moverte y atacar · <b>Q W E R</b> elige una habilidad (verás su alcance) y <b>clic derecho</b> donde quieras que golpee (Esc o la misma tecla la cancelan) ·
+        <b>Controles:</b> clic derecho para moverte y atacar · <b>Q W E R</b> elige una habilidad (verás su alcance) y <b>clic izquierdo</b> donde quieras que golpee (clic derecho, Esc o la misma tecla la cancelan) ·
         <b>Mayús + Q/W/E/R</b> mejorar habilidad · <b>P</b> tienda (en tu base) · <b>B</b> volver a la base · <b>1</b> poción · <b>S</b> detenerse · <b>rueda</b> zoom · <b>clic en el minimapa</b> ir a ese punto · <b>Tab</b> marcador · <b>Esc</b> pausa
       </div>
-      <div class="goal">🎯 Objetivo: hay tres carriles con dos obeliscos cada uno. Derriba los dos obeliscos de cualquier carril para dejar expuesto a <b>Lorik</b> y derrótalo en su santuario. Protege la Torre de Zugri.</div>
+      <div class="goal">🎯 Objetivo: hay tres carriles con dos obeliscos cada uno. Derriba los dos obeliscos de cualquier carril para dejar expuesto el <b>Altar</b> de la Legión y destrúyelo. Protege tu <b>Santuario</b>.</div>
     </div>
   </div>
 
@@ -97,9 +97,25 @@
     </div>
 
     <div id="shop">
-      <div class="shopHead"><b>Tienda de Zugri</b><span>🪙 <span id="shopGold">0</span></span><button id="shopClose">✕</button></div>
-      <div id="shopWarn">Solo puedes comprar dentro de tu base (o mientras estás muerto).</div>
-      <div id="shopList"></div>
+      <div class="shopHead">
+        <div class="shopTitle"><b>Tienda de los Blood Hawks</b><span>Equipa a tu héroe para la batalla</span></div>
+        <div class="shopGold">🪙 <span id="shopGold">0</span></div>
+        <button id="shopClose" title="Cerrar (Esc)">✕</button>
+      </div>
+      <div id="shopWarn">🔒 Solo puedes comprar en tu base (o mientras estás caído). Pulsa <b>B</b> para volver.</div>
+      <div class="shopBody">
+        <div class="shopLeft">
+          <div id="shopTabs"></div>
+          <div id="shopGrid"></div>
+        </div>
+        <div class="shopRight">
+          <div id="shopDetail"></div>
+          <div class="shopInvTitle">Tu equipo <span id="shopInvCount"></span></div>
+          <div id="shopInv"></div>
+        </div>
+      </div>
+      <div class="shopFoot">Clic: ver detalles · <b>Doble clic</b> o <b>clic derecho</b>: comprar · <b>Esc</b> o <b>P</b>: cerrar</div>
+    </div>
     </div>
 
     <div id="deadScreen"><div>Has caído</div><div class="small">Reapareces en <span id="deadTimer">0</span> s · puedes comprar en la tienda (P)</div></div>

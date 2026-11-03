@@ -140,19 +140,6 @@ button { font-family: inherit; cursor: pointer; }
 #kda { font-size: 10.5px; color: var(--dim); margin-top: 4px; text-align: center; }
 #minimap { border-radius: 8px; border: 1px solid var(--line); width: 240px; height: 141px; cursor: pointer; }
 
-#shop { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -58%); width: min(520px, calc(100vw - 32px)); max-height: 70vh; display: none; flex-direction: column; background: rgba(16, 14, 26, 0.97); border: 1px solid var(--gold); border-radius: 14px; padding: 12px; }
-.shopHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-family: Cinzel, serif; color: var(--gold); margin-bottom: 8px; }
-.shopHead button { background: none; border: none; color: var(--text); font-size: 18px; }
-#shopWarn { font-size: 12px; color: #ffd36a; margin-bottom: 6px; }
-#shopList { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-.shopItem { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; background: #1d182b; border: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer; }
-.shopItem:hover { border-color: var(--gold); }
-.shopItem.cant { opacity: 0.45; }
-.shopCat { font-family: Cinzel, serif; color: var(--gold); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; margin: 6px 2px 0; opacity: 0.8; }
-.sicon { font-size: 24px; width: 34px; text-align: center; }
-.sinfo { flex: 1; display: flex; flex-direction: column; font-size: 12px; }
-.sinfo span { color: var(--dim); }
-.scost { font-weight: 800; color: #ffd700; white-space: nowrap; }
 
 #deadScreen { position: absolute; top: 34%; left: 50%; transform: translateX(-50%); display: none; flex-direction: column; align-items: center; gap: 4px; pointer-events: none;
   font-family: Cinzel, serif; font-size: 34px; font-weight: 800; color: #ff8a8a; text-shadow: 0 2px 10px #000; }
@@ -222,3 +209,66 @@ body:has(#deadScreen[style*="flex"]) #view { filter: grayscale(0.85) brightness(
 #banner .bs { margin-top: 2px; font-weight: 700; font-size: 16px; color: var(--text); text-shadow: 0 2px 6px #000; }
 #banner.good .bt { color: #ffd76a; }
 #banner.danger .bt { color: #ff6a7a; }
+
+/* ---------------- TIENDA ---------------- */
+#shop { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); width: min(900px, calc(100vw - 32px)); height: min(600px, calc(100vh - 230px)); min-height: 380px;
+  display: none; flex-direction: column; gap: 8px; padding: 14px 16px 10px; border-radius: 16px; z-index: 20;
+  background: radial-gradient(ellipse at 20% 0%, rgba(224, 179, 60, 0.12), transparent 55%), linear-gradient(180deg, rgba(24, 20, 36, 0.98), rgba(12, 10, 20, 0.98));
+  border: 1px solid var(--gold); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.04); }
+.shopHead { display: flex; align-items: center; gap: 14px; }
+.shopTitle { flex: 1; display: flex; flex-direction: column; }
+.shopTitle b { font-family: Cinzel, serif; font-size: 20px; color: var(--gold); letter-spacing: 0.03em; }
+.shopTitle span { font-size: 12px; color: var(--dim); }
+.shopGold { font-weight: 800; font-size: 20px; color: #ffd700; padding: 6px 14px; border-radius: 10px; background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.3); }
+#shopClose { width: 34px; height: 34px; border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.12); background: #231e34; color: var(--text); font-size: 16px; }
+#shopClose:hover { border-color: var(--gold); }
+#shopWarn { font-size: 12.5px; color: #ffd36a; padding: 6px 10px; border-radius: 8px; background: rgba(255, 211, 106, 0.08); border: 1px solid rgba(255, 211, 106, 0.25); }
+.shopBody { flex: 1; min-height: 0; display: flex; gap: 14px; }
+.shopLeft { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+#shopTabs { display: flex; flex-wrap: wrap; gap: 5px; }
+.stab { padding: 6px 11px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, 0.1); background: #1b1728; color: var(--dim); font-size: 12.5px; font-weight: 600; }
+.stab:hover { color: var(--text); }
+.stab.sel { background: linear-gradient(180deg, #3a2e18, #2a2214); color: var(--gold); border-color: var(--gold); }
+#shopGrid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; align-content: start; padding: 2px 4px 4px 2px; }
+.scard { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px 8px; border-radius: 12px; cursor: pointer; text-align: center;
+  background: linear-gradient(180deg, #221c33, #18142a); border: 1px solid rgba(255, 255, 255, 0.08); transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s; }
+.scard:hover { transform: translateY(-2px); border-color: rgba(224, 179, 60, 0.6); }
+.scard.sel { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 6px 18px rgba(224, 179, 60, 0.25); }
+.scard.cant { opacity: 0.5; filter: saturate(0.5); }
+.scard.next { box-shadow: 0 0 0 1px #8dff9a, 0 0 14px rgba(141, 255, 154, 0.35); }
+.scard .sic { width: 54px; height: 54px; border-radius: 12px; display: grid; place-items: center; font-size: 30px; background: radial-gradient(circle at 50% 35%, #3a3050, #1a1526); border: 1px solid rgba(224, 179, 60, 0.35); }
+.scard .sic .iicon { width: 82%; height: 82%; }
+.scard .sn { font-size: 11.5px; font-weight: 700; line-height: 1.2; min-height: 28px; display: flex; align-items: center; }
+.scard .sc { font-size: 12px; font-weight: 800; color: #ffd700; }
+.scard .sown { position: absolute; top: 5px; right: 6px; font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 99px; background: #2f6a3a; color: #c8ffd0; }
+.scard .srec { position: absolute; top: 4px; left: 6px; font-size: 12px; }
+.shopRight { width: 280px; flex: none; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+#shopDetail { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 8px; }
+.sdTop { display: flex; gap: 10px; align-items: center; }
+.sdIcon { width: 64px; height: 64px; flex: none; border-radius: 14px; display: grid; place-items: center; font-size: 36px; background: radial-gradient(circle at 50% 35%, #45385e, #1a1526); border: 1px solid var(--gold); }
+.sdIcon .iicon { width: 82%; height: 82%; }
+.sdName { font-family: Cinzel, serif; font-weight: 800; font-size: 16px; color: var(--text); line-height: 1.2; }
+.sdCat { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.sdStats { display: flex; flex-direction: column; gap: 3px; }
+.sdStat { display: flex; justify-content: space-between; font-size: 12.5px; padding: 4px 8px; border-radius: 6px; background: rgba(141, 255, 154, 0.06); }
+.sdStat b { color: #8dff9a; }
+.sdDesc { font-size: 12.5px; color: var(--dim); line-height: 1.45; }
+.sdBuy { margin-top: auto; padding: 11px; border-radius: 10px; border: none; font-weight: 800; font-size: 15px; color: #1a1206; background: linear-gradient(180deg, #ffe08a, #d9a92c); box-shadow: 0 4px 16px rgba(224, 179, 60, 0.3); }
+.sdBuy:hover { filter: brightness(1.1); }
+.sdBuy:disabled { background: #2a2536; color: var(--dim); box-shadow: none; cursor: not-allowed; }
+.sdSell { padding: 8px; border-radius: 10px; border: 1px solid rgba(255, 106, 106, 0.4); background: rgba(255, 106, 106, 0.08); color: #ffb0b0; font-weight: 700; font-size: 13px; }
+.sdEmpty { margin: auto; text-align: center; color: var(--dim); font-size: 13px; }
+.shopInvTitle { font-family: Cinzel, serif; font-size: 13px; color: var(--gold); display: flex; justify-content: space-between; }
+.shopInvTitle span { font-family: Inter, sans-serif; color: var(--dim); font-size: 12px; }
+#shopInv { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.sinv { position: relative; aspect-ratio: 1; border-radius: 10px; display: grid; place-items: center; font-size: 22px; background: #16131f; border: 1px dashed rgba(255, 255, 255, 0.12); cursor: pointer; }
+.sinv.full { border: 1px solid rgba(224, 179, 60, 0.45); background: radial-gradient(circle at 50% 35%, #2e2640, #17131f); }
+.sinv.sel { border-color: #ff8a8a; box-shadow: 0 0 0 1px #ff8a8a; }
+.sinv .iicon { width: 78%; height: 78%; }
+.sinv span { position: absolute; bottom: 1px; right: 4px; font-size: 10px; font-weight: 800; }
+.shopFoot { font-size: 11.5px; color: var(--dim); text-align: center; }
+@media (max-width: 760px) {
+  .shopBody { flex-direction: column; }
+  .shopRight { width: auto; }
+  #shopDetail { flex: none; max-height: 220px; }
+}
