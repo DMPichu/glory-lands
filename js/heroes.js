@@ -92,17 +92,17 @@ function faceTexture(o) {
   x.scale(2, 2); // se dibuja en coordenadas de 256 con el doble de resolución
   x.lineCap = 'round'; x.lineJoin = 'round';
   const F = !!o.female;
-  const eyeY = 140, dx = F ? 47 : 45;
+  const eyeY = 146, dx = F ? 46 : 44;
   // ojos de anime: grandes y verticales (más en las chicas)
-  const ew = F ? 27 : 24;          // media anchura del ojo
-  const irx = F ? 15.5 : 13, iry = F ? 21 : 17; // iris (elipse vertical)
+  const ew = F ? 29 : 25;          // media anchura del ojo
+  const irx = F ? 17 : 14, iry = F ? 23 : 18.5; // iris (elipse vertical)
   if (o.paint) { // pintura de guerra (Astrid): franja suave detrás de los ojos
     x.fillStyle = o.paint; x.globalAlpha = 0.5;
     x.beginPath(); x.ellipse(128, eyeY - 2, 104, 20, 0, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
   }
   // rubor con rayitas
   for (const s of [-1, 1]) {
-    const cx = 128 + s * 66, cy = eyeY + 34;
+    const cx = 128 + s * 72, cy = eyeY + 42;
     const g = x.createRadialGradient(cx, cy, 2, cx, cy, F ? 20 : 15);
     g.addColorStop(0, F ? 'rgba(255,120,140,0.38)' : 'rgba(230,120,120,0.18)'); g.addColorStop(1, 'rgba(255,120,140,0)');
     x.fillStyle = g; x.fillRect(cx - 22, cy - 22, 44, 44);
@@ -182,17 +182,17 @@ function faceTexture(o) {
   }
   // nariz: apenas una sombra
   x.fillStyle = 'rgba(170,90,80,0.35)';
-  x.beginPath(); x.ellipse(129, eyeY + 40, 2.2, 1.6, 0, 0, Math.PI * 2); x.fill();
+  x.beginPath(); x.ellipse(129, eyeY + 44, 2.4, 1.7, 0, 0, Math.PI * 2); x.fill();
   // boca pequeña
   x.strokeStyle = o.mouth || '#9a3a48'; x.lineWidth = 2.6;
   x.beginPath();
-  if (o.frown) { x.moveTo(121, eyeY + 60); x.quadraticCurveTo(128, eyeY + 57, 135, eyeY + 60); }
-  else { x.moveTo(121, eyeY + 57); x.quadraticCurveTo(128, eyeY + 63, 135, eyeY + 57); }
+  if (o.frown) { x.moveTo(120, eyeY + 76); x.quadraticCurveTo(128, eyeY + 73, 136, eyeY + 76); }
+  else { x.moveTo(120, eyeY + 73); x.quadraticCurveTo(128, eyeY + 80, 136, eyeY + 73); }
   x.stroke();
   if (o.beard) { // perilla y bigote (Kouji)
     x.fillStyle = o.beard;
-    x.beginPath(); x.ellipse(116, eyeY + 53, 13, 4.5, 0.25, 0, Math.PI * 2); x.ellipse(140, eyeY + 53, 13, 4.5, -0.25, 0, Math.PI * 2); x.fill();
-    x.beginPath(); x.moveTo(118, eyeY + 72); x.quadraticCurveTo(128, eyeY + 102, 138, eyeY + 72); x.fill();
+    x.beginPath(); x.ellipse(116, eyeY + 67, 13, 4.5, 0.25, 0, Math.PI * 2); x.ellipse(140, eyeY + 67, 13, 4.5, -0.25, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.moveTo(118, eyeY + 86); x.quadraticCurveTo(128, eyeY + 112, 138, eyeY + 86); x.fill();
   }
   if (o.scar) {
     x.strokeStyle = o.scar; x.lineWidth = 2.5;
@@ -286,10 +286,10 @@ function headGeo() {
     const g = new THREE.SphereGeometry(HEAD_R, 40, 30);
     const p = g.attributes.position;
     for (let i = 0; i < p.count; i++) {
-      let x = p.getX(i), y = p.getY(i) * 1.06, z = p.getZ(i);
+      let x = p.getX(i) * 0.93, y = p.getY(i) * 1.06, z = p.getZ(i);
       if (y < 0) {
         const k = Math.min(1, -y / (HEAD_R * 1.06));
-        x *= 1 - 0.34 * k * k;
+        x *= 1 - 0.42 * k * k;
         z = z * (1 - 0.18 * k * k) + (z > 0 ? 0.035 * k : 0);
       }
       p.setXYZ(i, x, y, z);
@@ -305,7 +305,7 @@ function faceGeo() {
     const p = g.attributes.position, uv = g.attributes.uv;
     for (let i = 0; i < p.count; i++) {
       const front = p.getZ(i) > 0.03;
-      uv.setXY(i, front ? p.getX(i) / 0.36 + 0.5 : 0, front ? p.getY(i) / 0.36 + 0.5 : 0);
+      uv.setXY(i, front ? p.getX(i) / 0.42 + 0.5 : 0, front ? p.getY(i) / 0.42 + 0.5 : 0);
     }
     uv.needsUpdate = true;
     return g;
