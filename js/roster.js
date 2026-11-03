@@ -84,7 +84,6 @@ const NEW = {
     ],
     build: ['tear', 'crystal', 'boots', 'staff', 'cloak', 'aegis'], prio: [1, 2, 0],
     look: { skin: 0xfde6d8, hair: 0xff8a30, hairStyle: 'long', top: 0xf4f6ff, accent: 0xe0b33c, pants: 0x2a5aa0, weapon: 'staff', female: true, eye: '#3aa860', hat: 'hood', hatColor: 0xf8f8ff, hatAccent: 0xe0b33c },
-    glb: { url: 'models/heroes/belian.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
   },
   // ------------------------------------------------------------ VALLENTINE
   vallentine: {
@@ -142,7 +141,6 @@ const NEW = {
     ],
     build: ['heart', 'cloak', 'boots', 'shield', 'aegis', 'tear'], prio: [0, 1, 2],
     look: { skin: 0xfdeef0, hair: 0x14141c, hairStyle: 'bob', hairStreak: 0x2a6aff, top: 0x16161e, accent: 0x5ab8ff, pants: 0x16161e, weapon: 'fan', female: true, eye: '#4a9aff', hat: 'tiara', cape: 0x1a2a6a },
-    glb: { url: 'models/heroes/lucille.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
   },
   // ------------------------------------------------------------ ESPERANZA
   esperanza: {
@@ -162,7 +160,6 @@ const NEW = {
     ],
     build: ['fang', 'tear', 'boots', 'ember', 'aegis', 'heart'], prio: [0, 1, 2],
     look: { skin: 0xf0e4dc, hair: 0x5a7080, hairStyle: 'long', top: 0x1a2430, accent: 0x3a8ab8, pants: 0x141a22, weapon: 'sword', female: true, eye: '#8a98a8', hat: 'beret', hatColor: 0x1a1e26, cape: 0x1e2a38 },
-    glb: { url: 'models/heroes/esperanza.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
   },
   // ------------------------------------------------------------ FUYUMI
   fuyumi: {
@@ -201,7 +198,6 @@ const NEW = {
     ],
     build: ['heart', 'boots', 'shield', 'cloak', 'thorns', 'aegis'], prio: [0, 1, 2],
     look: { skin: 0x6ac83a, hair: 0xe0281e, hairStyle: 'short+spiky', ears: 'goblin', top: 0x1a1a1e, accent: 0xe0b33c, pants: 0x1a1a1e, weapon: 'daggers', female: true, eye: '#e02020', hat: 'bow', hatColor: 0x1a1a1e, cape: 0xb0181e, small: true },
-    glb: { url: 'models/heroes/slinxi.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
   },
   // ------------------------------------------------------------ UMI
   umi: {
@@ -221,7 +217,6 @@ const NEW = {
     ],
     build: ['tear', 'boots', 'ember', 'aegis', 'heart', 'trigger'], prio: [1, 0, 2],
     look: { skin: 0x3a2a24, hair: 0xf0e8dc, hairStyle: 'bob', top: 0x2a2030, accent: 0xe0b33c, pants: 0x1e1824, weapon: 'fists', female: true, eye: '#ff8a20', hat: 'catHood', hatColor: 0x2e2638, hatAccent: 0xe0b33c },
-    glb: { url: 'models/heroes/umi.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
   },
   // ------------------------------------------------------------ ZEFLIE
   zeflie: {
@@ -240,7 +235,6 @@ const NEW = {
     ],
     build: ['tome', 'crystal', 'boots', 'moon', 'staff', 'cloak'], prio: [0, 1, 2],
     look: { skin: 0xfdeee4, hair: 0xf6f0dc, hairStyle: 'twin', tie: 0x1a1a1a, ears: 'elf', top: 0x4a5a30, accent: 0xe0702a, pants: 0x3a4a28, weapon: 'staff', female: true, eye: '#2ab0b0' },
-    glb: { url: 'models/heroes/zeflie.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
   },
   // ------------------------------------------------------------ ZESTARI
   zestari: {
@@ -279,7 +273,6 @@ const NEW = {
     ],
     build: ['fang', 'heart', 'boots', 'thorns', 'katana', 'aegis'], prio: [0, 2, 1],
     look: { skin: 0xc89878, hair: 0xece8f0, hairStyle: 'wild', top: 0x3a2a20, accent: 0x8a5ac8, pants: 0x2a1e18, weapon: 'axe', female: true, eye: '#e02a3a', horns: 0x6a4a9a },
-    glb: { url: 'models/heroes/xeluna.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
   },
   // ------------------------------------------------------------ VRIZAHL
   vrizahl: {
@@ -318,7 +311,6 @@ const NEW = {
     ],
     build: ['tome', 'crystal', 'boots', 'staff', 'cloak', 'moon'], prio: [0, 2, 1],
     look: { beast: { kind: 'cat', fur: 0x1a1a1e, muzzle: 0xf4f0ec, eye: 0xffd040 }, top: 0x8a8e98, topM: 0.7, accent: 0x6a2a8a, pants: 0x1e1a24, weapon: 'candle', female: true, hat: 'witch', hatColor: 0x3a2a4a, hatAccent: 0x9a4ad8, pauldrons: true },
-    glb: { url: 'models/heroes/candle.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
   },
   // ------------------------------------------------------------ CABBO
   cabbo: {
@@ -338,7 +330,6 @@ const NEW = {
     ],
     build: ['heart', 'tear', 'boots', 'shield', 'aegis', 'cloak'], prio: [1, 0, 2],
     look: { skin: 0xd8a880, top: 0x6a2a7a, accent: 0xd04a3a, pants: 0x4a1e5a, weapon: 'fists', hat: 'helm', hatColor: 0xb8bcc8, hatAccent: 0x8a3a9a, bulky: true, pauldrons: true },
-    glb: { url: 'models/heroes/cabbo.glb', height: 2.4, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.5 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
   },
   // ------------------------------------------------------------ KONTA
   konta: {
@@ -358,7 +349,6 @@ const NEW = {
     ],
     build: ['sword', 'katana', 'boots', 'fang', 'scope', 'cloak'], prio: [2, 0, 1],
     look: { beast: { kind: 'cat', fur: 0x8a6a44, muzzle: 0xd8c8a8, eye: 0x40e0d0 }, top: 0x6a5034, accent: 0x2ab8c0, pants: 0x4a3828, weapon: 'daggers', hat: 'wide', hatColor: 0x2a9aa8, hatAccent: 0x6a4a2a, feathers: 0xd8c8a8, cape: 0x2a9aa8 },
-    glb: { url: 'models/heroes/konta.glb', height: 2.3, anims: { idle: 'Idle', walk: 'Run', attack: 'Attack', death: 'Death' }, attackTime: 0.45 }, // Hunyuan3D-2 + tools/blender/ia_heroe.py
   },
 };
 

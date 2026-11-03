@@ -99,6 +99,8 @@ Hecho: Hermes (conectado en `roster.js`). Para otro héroe, copia `hermes.py` y 
 
 ### Modelos generados con IA (Hunyuan3D-2)
 
+**Descartado (noviembre de 2026):** los 14 modelos que se hicieron así (Cabbo, Belian, Lucille, Esperanza, Slinxi, Umi, Xeluna, Candle, Konta, Kouji, Grimdarkus, Ikaruus, Josephine y Zeflie) daban miedo de cerca a la dueña (caras deformes, dibujo estirado) y se retiraron; siguen en el historial de git (commit d4c263a). No volver a conectarlos sin preguntar. Las herramientas se conservan por si se usan con modelos de Tripo o Meshy, que traen textura completa.
+
 1. `python tools/hunyuan3d.py <ilustración de cuerpo entero> <carpeta>`: envía la imagen a la demo pública de Hunyuan3D-2 y descarga `white_mesh.glb` (solo forma; la textura de la demo fallaba). **Pide permiso a la dueña antes de enviar sus imágenes.**
 2. `blender -b --factory-startup --python tools/blender/ia_heroe.py -- <white_mesh.glb> <ilustración> models/heroes/<id>.glb <Nombre> 30000 <izq,der,arriba,abajo> <centro_cabeza_x> <ensanche>`: quita la peana, reduce a 30.000 caras, pinta la ilustración proyectada desde delante (recuadro del personaje y centro de la cabeza en coordenadas 0-1 de la imagen; ensanche ≈ 1,3), esqueleto común con pesos por cercanía y animaciones.
    Sin los últimos argumentos el encaje es automático: detecta la silueta del personaje en el dibujo, toma la vertical del recuadro y busca la posición y la escala horizontal que maximizan la coincidencia de siluetas (IoU); el fondo se rellena con el color del personaje más cercano (difuminado) para que lo que sobresale no salga blanco.
