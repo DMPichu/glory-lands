@@ -33,6 +33,7 @@ export class UI {
       else this.message(`${L(killer) || 'Una torre'} ha derrotado a ${L(victim)}`, victim.team === p.team ? 'danger' : 'good');
     });
     game.on('heroKilled', (e) => this.announceKill(e));
+    game.on('heroKilled', (e) => this.killFeed(e));
     game.on('heroKilled', ({ victim }) => (this.deathMarks ||= []).push({ x: victim.pos.x, z: victim.pos.z, t: this.g.time, ally: victim.team === this.g.player.team }));
     game.on('epicKilled', ({ monster, team }) => this.banner(`¡${monster.name} derrotado!`, team === this.g.player.team ? 'good' : 'danger', team === this.g.player.team ? 'Bendición para todo el equipo' : 'La Legión recibe su bendición'));
     game.on('towerDestroyed', ({ tower }) => {
@@ -104,8 +105,8 @@ export class UI {
       const tp = $(h.team === 'blue' ? 'teams' : 'teamsRed');
       const el = document.createElement('div');
       el.className = 'tmember ' + h.team + (h.isPlayer ? ' me' : '');
-      el.innerHTML = `<div class="tport" style="background:radial-gradient(circle at 35% 30%, ${h.def.color}, #1a1626 80%)">${portrait(h.def)}<span class="tlvl"></span><span class="tdead"></span></div>
-        <div class="tinfo"><div class="tname">${h.name}</div><div class="tbar"><i></i></div><div class="tkda"></div></div>`;
+      el.innerHTML = `<div class="tport" style="background:radial-gradient(circle at 35% 30%, ${h.def.color}, #1a1626 80%)">${portrait(h.def)}<span class="tlvl"></span><span class="tdead"></span><span class="tult" title="Definitiva"></span></div>
+        <div class="tinfo"><div class="tname">${h.name}</div><div class="tbar"><i></i></div><div class="tmana"><i></i></div><div class="tkda"></div></div>`;
       tp.appendChild(el);
       return el;
     });
@@ -131,8 +132,8 @@ export class UI {
     this.shopTab = 'rec';
     this.shopSel = this.shopRec.find((id) => id !== 'potion') || SHOP_ORDER[0];
     this.shopSellIdx = -1;
-    const cats = ['rec', 'all', ...new Set(SHOP_ORDER.map((id) => ITEMS[id].cat).filter(Boolean))];
-    const names = { rec: '⭐ Recomendados', all: 'Todos' };
+    const cats = ['rec', 'all', 'basic', 'legend', ...new Set(SHOP_ORDER.map((id) => ITEMS[id].cat).filter(Boolean))];
+    const names = { rec: '⭐ Recomendados', all: 'Todos', basic: '🧩 Componentes', legend: '👑 Legendarios' };
     const icons = { Ataque: '⚔️', Magia: '✨', Defensa: '🛡️', Utilidad: '👢', Consumibles: '🧪' };
     const tabs = $('shopTabs');
     tabs.innerHTML = '';
@@ -158,17 +159,21 @@ export class UI {
   }
 
   renderShopGrid() {
-    const ids = this.shopTab === 'rec' ? this.shopRec : this.shopTab === 'all' ? SHOP_ORDER : SHOP_ORDER.filter((id) => ITEMS[id].cat === this.shopTab);
+    const ids = this.shopTab === 'rec' ? this.shopRec : this.shopTab === 'all' ? SHOP_ORDER
+      : this.shopTab === 'basic' ? SHOP_ORDER.filter((id) => ITEMS[id].tier === 1)
+      : this.shopTab === 'legend' ? SHOP_ORDER.filter((id) => ITEMS[id].tier === 3)
+      : SHOP_ORDER.filter((id) => ITEMS[id].cat === this.shopTab);
     document.querySelectorAll('.stab').forEach((b) => b.classList.toggle('sel', b.dataset.tab === this.shopTab));
     const grid = $('shopGrid');
     grid.innerHTML = '';
     for (const id of ids) {
       const it = ITEMS[id];
       const el = document.createElement('div');
-      el.className = 'scard';
+      el.className = 'scard t' + (it.tier ?? 2);
       el.dataset.id = id;
       el.innerHTML = `${this.shopRec.includes(id) && this.shopTab !== 'rec' ? '<span class="srec" title="Recomendado">⭐</span>' : ''}<span class="sown"></span>
-        <div class="sic">${itemIcon(id, it.icon)}</div><div class="sn">${it.name}</div><div class="sc">${it.cost} 🪙</div>`;
+        <div class="sic">${itemIcon(id, it.icon)}</div><div class="sn">${it.name}</div><div class="sc">${it.cost} 🪙</div>
+        <span class="stier">${it.tier === 1 ? 'BÁSICO' : it.tier === 3 ? 'LEGENDARIO' : ''}</span>`;
       el.onclick = () => { this.shopSel = id; this.shopSellIdx = -1; this.renderShopDetail(); };
       el.ondblclick = () => this.shopBuy(id);
       el.oncontextmenu = (e) => { e.preventDefault(); this.shopSel = id; this.shopSellIdx = -1; this.shopBuy(id); this.renderShopDetail(); };
@@ -197,14 +202,16 @@ export class UI {
     if (selling) {
       action = `<button class="sdSell" id="sdSell">Vender por ${Math.floor(it.cost * 0.6)} 🪙</button>`;
     } else {
-      const full = !it.consumable && p.items.length >= CONST.maxItems;
-      const why = !inShop ? 'Solo en tu base' : full ? 'Inventario lleno' : p.gold < it.cost ? `Te faltan ${Math.ceil(it.cost - p.gold)} 🪙` : '';
-      action = `<button class="sdBuy" id="sdBuy" ${why ? 'disabled' : ''}>${why || `Comprar · ${it.cost} 🪙`}</button>`;
+      const rc = it.consumable ? { cost: it.cost, used: [] } : g.recipeCost(p, id);
+      const full = !it.consumable && p.items.length - rc.used.length >= CONST.maxItems;
+      const why = !inShop ? 'Solo en tu base' : full ? 'Inventario lleno' : p.gold < rc.cost ? `Te faltan ${Math.ceil(rc.cost - p.gold)} 🪙` : '';
+      action = `<button class="sdBuy" id="sdBuy" ${why ? 'disabled' : ''}>${why || `Comprar · ${rc.cost} 🪙${rc.cost < it.cost ? ' (con tus componentes)' : ''}`}</button>`;
     }
     el.innerHTML = `<div class="sdTop"><div class="sdIcon">${itemIcon(id, it.icon)}</div>
         <div><div class="sdName">${it.name}</div><div class="sdCat">${it.cat || ''}${owned ? ` · tienes ${owned}` : ''}</div></div></div>
       <div class="sdStats">${this.statLines(it.stats)}</div>
-      <div class="sdDesc">${it.desc}</div>${action}`;
+      <div class="sdDesc">${it.desc}</div>${this.recipeHtml(id)}${action}`;
+    el.querySelectorAll('.sdPart').forEach((d) => d.addEventListener('click', () => { this.shopSel = d.dataset.id; this.shopSellIdx = -1; this.renderShopDetail(); this.shopKey = null; }));
     $('sdBuy')?.addEventListener('click', () => { this.shopBuy(id); this.renderShopDetail(); });
     $('sdSell')?.addEventListener('click', () => {
       const r = g.sell(p, this.shopSellIdx);
@@ -212,6 +219,20 @@ export class UI {
       this.shopSellIdx = -1; this.shopKey = null; this.renderShopDetail();
     });
     this.detailKey = `${id}|${selling}|${inShop}|${Math.floor(p.gold)}|${p.items.length}|${p.potions}`;
+  }
+
+  // Receta (con qué se construye) y en qué se convierte; los componentes que ya
+  // tiene el jugador salen resaltados. Clic en uno para verlo.
+  recipeHtml(id) {
+    const it = ITEMS[id], p = this.g.player;
+    const part = (c) => `<div class="sdPart${p.items.includes(c) ? ' have' : ''}" data-id="${c}" title="${ITEMS[c].name} · ${ITEMS[c].cost} 🪙">${itemIcon(c, ITEMS[c].icon)}</div>`;
+    let h = '';
+    if (it.from) {
+      const fee = it.cost - it.from.reduce((a, c) => a + ITEMS[c].cost, 0);
+      h += `<div class="sdRecipe"><b>Se construye con</b><div class="sdParts">${it.from.map(part).join('<span class="sdPlus">+</span>')}<span class="sdPlus">+ ${fee} 🪙</span></div></div>`;
+    }
+    if (it.into?.length) h += `<div class="sdRecipe"><b>Se mejora a</b><div class="sdParts">${it.into.map(part).join('')}</div></div>`;
+    return h;
   }
 
   updateShop() {
@@ -227,7 +248,9 @@ export class UI {
     document.querySelectorAll('.scard').forEach((el) => {
       const id = el.dataset.id, it = ITEMS[id];
       const owned = it.consumable ? p.potions : p.items.filter((x) => x === id).length;
-      el.classList.toggle('cant', p.gold < it.cost || !inShop);
+      const rc = it.consumable ? it.cost : g.recipeCost(p, id).cost;
+      el.classList.toggle('cant', p.gold < rc || !inShop);
+      el.querySelector('.sc').innerHTML = rc < it.cost ? `<s>${it.cost}</s>${rc} 🪙` : `${it.cost} 🪙`;
       el.classList.toggle('sel', id === this.shopSel && this.shopSellIdx < 0);
       el.classList.toggle('next', id === next && p.gold >= it.cost && inShop);
       const o = el.querySelector('.sown');
@@ -352,7 +375,22 @@ export class UI {
       el.querySelector('.tdead').textContent = h.alive ? '' : Math.ceil(h.deadTimer);
       el.classList.toggle('dead', !h.alive);
       el.querySelector('.tkda').textContent = `${h.kills}/${h.deaths}/${h.assists}`;
+      el.querySelector('.tmana i').style.width = (h.mp / Math.max(1, h.maxMp)) * 100 + '%';
+      const ult = h.abilities[3];
+      el.querySelector('.tult').classList.toggle('on', h.alive && ult.rank > 0 && ult.cd <= 0);
     });
+    // torres derribadas y oro de cada equipo (oro + valor de los objetos)
+    const worth = (team) => g.heroes.filter((h) => h.team === team).reduce((s, h) => s + h.gold + h.items.reduce((a, id) => a + ITEMS[id].cost, 0), 0);
+    const fallen = (team) => g.units.filter((u) => u.kind === 'tower' && u.team !== team && !u.alive).length;
+    const wb = worth('blue'), wr = worth('red');
+    $('goldBlue').textContent = (wb / 1000).toFixed(1) + 'k';
+    $('goldRed').textContent = (wr / 1000).toFixed(1) + 'k';
+    $('towersBlue').textContent = fallen('blue');
+    $('towersRed').textContent = fallen('red');
+    const diff = (p.team === 'blue' ? wb - wr : wr - wb);
+    const gd = $('goldDiff');
+    gd.textContent = Math.abs(diff) < 100 ? 'oro igualado' : `${diff > 0 ? '+' : '−'}${(Math.abs(diff) / 1000).toFixed(1)}k de oro`;
+    gd.className = diff >= 100 ? 'up' : diff <= -100 ? 'down' : '';
 
     // muerte
     const dead = $('deadScreen');
@@ -527,6 +565,20 @@ export class UI {
     return cv;
   }
 
+  // Registro de muertes arriba a la derecha (retrato del que mata ⚔ del que cae)
+  killFeed({ victim, killer }) {
+    const box = $('killfeed');
+    if (!box) return;
+    const face = (h) => h?.def ? `<span class="kfp ${h.team}" title="${this.g.label(h)}">${portrait(h.def)}</span>` : `<span class="kfp ${victim.team === 'blue' ? 'red' : 'blue'}">🏰</span>`;
+    const el = document.createElement('div');
+    el.className = 'kf ' + (victim.team === this.g.player.team ? 'enemy' : 'ally');
+    el.innerHTML = `${face(killer?.kind === 'hero' ? killer : null)}<span class="kfx">⚔</span>${face(victim)}`;
+    box.prepend(el);
+    while (box.children.length > 5) box.lastChild.remove();
+    setTimeout(() => el.classList.add('fade'), 7000);
+    setTimeout(() => el.remove(), 7700);
+  }
+
   // Anuncios grandes: primera sangre, rachas y asesinatos múltiples
   announceKill({ victim, killer }) {
     const g = this.g;
@@ -599,11 +651,25 @@ export class UI {
   drawBlessings(p) {
     const el = $('blessings');
     if (!el) return;
-    const list = activeBlessings(this.g, p);
+    const list = activeBlessings(this.g, p).map((b) => ({ ...b, cls: 'good' }));
+    // estados del jugador: los buenos en verde y los malos en rojo
+    const STATUS = [
+      ['stun', '💫', 'Aturdido', 'bad'], ['root', '🌿', 'Inmovilizado', 'bad'], ['slow', '🐌', 'Ralentizado', 'bad'], ['taunt', '🎭', 'Provocado', 'bad'],
+      ['mark', '🎯', 'Marcado: recibe más daño', 'bad'], ['weak', '💔', 'Debilitado: hace menos daño', 'bad'], ['dot', '🔥', 'Quemándose', 'bad'], ['banish', '📦', 'Encerrado', 'bad'],
+      ['stealth', '🌫️', 'En sigilo', 'good'], ['dr', '🪨', 'Reducción de daño', 'good'], ['as', '⚡', 'Velocidad de ataque', 'good'], ['spd', '💨', 'Velocidad', 'good'],
+      ['crit', '💥', 'Críticos', 'good'], ['dodge', '🍃', 'Esquiva', 'good'], ['kitranged', '🟢', 'Ataques a distancia', 'good'], ['hot', '💚', 'Curándose', 'good'],
+    ];
+    for (const [type, icon, name, cls] of STATUS) {
+      // solo los temporales (las pasivas permanentes se renuevan cada segundo y no se enseñan)
+      const b = p.buffs.filter((x) => x.type === type && !String(x.key).startsWith('kitp_')).sort((a, c) => c.t - a.t)[0];
+      if (b) list.push({ id: 'st_' + type, icon, name, desc: '', t: b.t, cls });
+    }
+    const sh = this.g.shieldTotal(p);
+    if (sh > 1) list.push({ id: 'st_shield', icon: '🛡️', name: `Escudo de ${Math.round(sh)}`, desc: '', t: Math.max(...p.shields.map((x) => x.t)), cls: 'good' });
     const key = list.map((b) => b.id).join(',');
     if (key !== this.blessKey) {
       this.blessKey = key;
-      el.innerHTML = list.map((b) => `<div class="bless" title="${b.name}: ${b.desc}">${b.icon}<span></span></div>`).join('');
+      el.innerHTML = list.map((b) => `<div class="bless ${b.cls}" title="${b.name}${b.desc ? ': ' + b.desc : ''}">${b.icon}<span></span></div>`).join('');
     }
     [...el.children].forEach((d, i) => { d.querySelector('span').textContent = Math.ceil(list[i].t); });
   }

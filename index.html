@@ -57,10 +57,11 @@
   <!-- HUD -->
   <div id="hud" style="display:none">
     <div id="topbar">
-      <span class="sb blue">Blood Hawks <b id="scoreBlue">0</b></span>
-      <span id="timer">00:00</span>
-      <span class="sb red"><b id="scoreRed">0</b> Legión de Lorik</span>
+      <div class="tbTeam blue"><span class="tbName">Blood Hawks</span><span class="tbStat" title="Torres derribadas">🏰 <b id="towersBlue">0</b></span><span class="tbStat" title="Oro del equipo (oro + objetos)">🪙 <b id="goldBlue">0</b></span><b class="tbKills" id="scoreBlue">0</b></div>
+      <div class="tbMid"><span id="timer">00:00</span><span id="goldDiff"></span></div>
+      <div class="tbTeam red"><b class="tbKills" id="scoreRed">0</b><span class="tbStat" title="Oro del equipo (oro + objetos)">🪙 <b id="goldRed">0</b></span><span class="tbStat" title="Torres derribadas">🏰 <b id="towersRed">0</b></span><span class="tbName">Legión de Lorik</span></div>
     </div>
+    <div id="killfeed"></div>
     <div id="teams"></div>
     <div id="teamsRed"></div>
     <div id="messages"></div>
@@ -85,8 +86,8 @@
       </div>
       <div id="inv">
         <div id="items">
-          <div class="item empty"></div><div class="item empty"></div><div class="item empty"></div>
-          <div class="item empty"></div><div class="item empty"></div><div class="item empty"></div>
+          <div class="item empty"></div><div class="item empty"></div><div class="item empty"></div><div class="item empty"></div>
+          <div class="item empty"></div><div class="item empty"></div><div class="item empty"></div><div class="item empty"></div>
         </div>
         <div class="invRow">
           <div id="potionSlot" class="item" title="Poción (tecla 1)">🧪<span id="potionCount">0</span></div>
