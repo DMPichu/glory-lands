@@ -9,6 +9,7 @@ import { heroAI, minionAI, structureAI } from './ai.js';
 import { sfx, voice } from './audio.js';
 import './roster.js'; // héroes nuevos y rework de Catarina (antes de usar HEROES)
 import { KIT, consumeAmp } from './kit.js';
+import { buildDecor } from './decor.js';
 import { setupJungle, updateJungle, monsterAI, monsterHit, monsterKilled } from './jungle.js';
 
 const TMP = new THREE.Vector3();
@@ -61,6 +62,7 @@ export class Game {
     this.scene.add(redLight);
 
     this.world = buildWorld(this.scene);
+    this.decor = buildDecor(this.scene); // bordillos, estandartes y círculos de runas
     this.obstacles = this.world.obstacles;
     this.fx = new Effects(this.scene);
 
@@ -1364,6 +1366,7 @@ export class Game {
       if (u.shields.length && Math.random() < 0.15) this.fx.spark(new THREE.Vector3(u.pos.x + (Math.random() - 0.5), 1 + Math.random(), u.pos.z + (Math.random() - 0.5)), 0xfff2a0, 0.07, 0.5, 0.6);
     }
     this.world.update?.(t, dt);
+    this.decor?.update(t);
     this.fx.update(dt);
   }
 

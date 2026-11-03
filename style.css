@@ -349,3 +349,40 @@ body:has(#deadScreen[style*="flex"]) #view { filter: grayscale(0.85) brightness(
 .sdPart .iicon { width: 78%; height: 78%; }
 .sdPart:hover { border-color: var(--gold); }
 .sdPlus { color: var(--dim); font-weight: 800; }
+
+/* ---------------- HUD (tercera versión) ---------------- */
+#topbar { gap: 0; padding: 0; border-radius: 0 0 16px 16px; top: 0; border-top: none; overflow: hidden;
+  background: linear-gradient(180deg, rgba(12, 10, 20, 0.97), rgba(26, 21, 38, 0.95)); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5); }
+.tbTeam { display: flex; align-items: center; gap: 12px; padding: 6px 14px; }
+.tbTeam.blue { background: linear-gradient(90deg, transparent, rgba(74, 163, 255, 0.18)); }
+.tbTeam.red { background: linear-gradient(270deg, transparent, rgba(255, 74, 90, 0.18)); }
+.tbName { font-family: Cinzel, serif; font-size: 13px; }
+.tbTeam.blue .tbName { color: var(--blue); } .tbTeam.red .tbName { color: var(--red); }
+.tbStat { font-size: 12px; color: var(--dim); } .tbStat b { color: var(--text); }
+.tbKills { font-family: Cinzel, serif; font-size: 24px; min-width: 30px; text-align: center; color: #fff; text-shadow: 0 0 10px rgba(255, 255, 255, 0.3); }
+.tbMid { display: flex; flex-direction: column; align-items: center; padding: 4px 16px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+#timer { font-size: 18px; }
+#goldDiff { font-size: 11px; font-weight: 700; }
+#goldDiff.up { color: #8dff9a; } #goldDiff.down { color: #ff8a8a; }
+#messages { top: 64px; }
+/* registro de muertes */
+#killfeed { position: absolute; top: 64px; right: 196px; display: flex; flex-direction: column; gap: 4px; pointer-events: none; align-items: flex-end; }
+.kf { display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 8px; background: rgba(12, 10, 20, 0.88); font-size: 12px; font-weight: 600; transition: opacity 0.6s; }
+.kf.ally { border-left: 3px solid var(--blue); } .kf.enemy { border-left: 3px solid var(--red); }
+.kf.fade { opacity: 0; }
+.kfp { position: relative; width: 26px; height: 26px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; font-family: Cinzel, serif; font-size: 12px; color: #fff; border: 2px solid var(--blue); }
+.kfp.red { border-color: var(--red); }
+.kfp .tok { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.kfx { color: var(--gold); font-size: 14px; }
+/* definitiva lista en los paneles de equipo */
+.tult { position: absolute; top: -2px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: #3a3448; border: 1px solid #000; }
+.tult.on { background: #ffd040; box-shadow: 0 0 8px #ffd040; }
+.tmana { height: 3px; background: #1a1a28; border-radius: 2px; overflow: hidden; margin-top: 2px; }
+.tmana i { display: block; height: 100%; background: #4a8aff; }
+/* definitiva lista en la barra de habilidades */
+#abilities .ability:last-child.ready { animation: ultReady 1.4s infinite alternate; }
+@keyframes ultReady { from { box-shadow: 0 0 8px rgba(255, 208, 64, 0.4); } to { box-shadow: 0 0 22px rgba(255, 208, 64, 0.9), inset 0 0 14px rgba(255, 208, 64, 0.35); } }
+/* efectos activos (positivos con borde verde, negativos con borde rojo) */
+.bless.good { border-color: #8dff9a; box-shadow: 0 0 8px rgba(141, 255, 154, 0.35); }
+.bless.bad { border-color: #ff6a6a; box-shadow: 0 0 8px rgba(255, 106, 106, 0.45); }
+.bless { width: 34px; height: 34px; font-size: 18px; }
